@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="IncentiveApp">
+    
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#542078">
+
+    <title>Incentive Calculator</title>
+    <style>
+        :root {
+            --primary: #542078;
+            --secondary: #00B5E2;
+            --bg-color: #f8f6fb;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-light: #666666;
+            --border-color: #e0dced;
+            --readonly-bg: #f0f0f0;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --diamond: #8B5CF6;
+        }
+
+        /* ป้องกันผู้ใช้เผลอกดคลุมดำข้อความบนมือถือเหมือนแอปจริง */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: transparent; color: var(--text-main); padding-bottom: 40px; position: relative; user-select: none; -webkit-user-select: none; }
+        input, select, textarea { user-select: auto; -webkit-user-select: auto; } /* แต่ยอมให้คลุมดำตัวเลขในช่องกรอกได้ */
+        
+        #app-wrapper { background-color: var(--bg-color); min-height: 100vh; }
+        canvas#fireworks { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 999; }
+
+        /* Header (มีการเพิ่ม padding-top สำหรับรอยบาก iPhone) */
+        header { background-color: var(--primary); color: white; padding: max(16px, env(safe-area-inset-top)) 15px 16px 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header-title { font-size: 1.1rem; font-weight: bold; }
+        .header-actions { display: flex; gap: 8px; }
+        .header-btn { background-color: var(--secondary); color: white; border: none; padding: 8px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; cursor: pointer; }
+        .header-btn.backup { background-color: #3b82f6; }
+
+        .year-container { background: var(--card-bg); padding: 15px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-color); }
+        .year-container label { font-weight: bold; font-size: 1.1rem; color: var(--primary); }
+        #global-year { padding: 8px; font-size: 1.1rem; border: 1px solid var(--border-color); border-radius: 8px; background: white; color: var(--primary); font-weight: bold; }
+
+        .tabs { display: flex; overflow-x: auto; background: var(--card-bg); padding: 10px 10px 0 10px; border-bottom: 2px solid var(--border-color); }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab { padding: 12px 20px; font-size: 0.9rem; font-weight: 600; color: var(--text-light); border-bottom: 3px solid transparent; white-space: nowrap; cursor: pointer; }
+        .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+        .tab-content { display: none; padding: 20px; animation: fadeIn 0.3s ease-in-out; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .section-title { font-size: 1.4rem; color: var(--primary); margin-bottom: 5px; font-weight: bold; text-align: center; }
+        .diamond-msg { text-align: center; color: var(--diamond); font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .product-card { background: var(--card-bg); border-radius: 12px; padding: 15px; border: 1px solid var(--border-color); }
+        .product-title { font-size: 1.1rem; font-weight: bold; text-align: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--border-color); }
+        .mounjaro-title { color: var(--primary); border-bottom-color: var(--primary); }
+        .trulicity-title { color: var(--secondary); border-bottom-color: var(--secondary); }
+
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; font-size: 0.8rem; color: var(--text-light); margin-bottom: 5px; font-weight: 600; }
+        .input-wrapper { position: relative; display: flex; align-items: center; }
+        .input-wrapper span { position: absolute; right: 10px; color: var(--text-light); font-size: 0.8rem; pointer-events: none; }
+
+        input[type="text"], input[type="number"], select { width: 100%; padding: 10px; font-size: 1rem; border: 1px solid var(--border-color); border-radius: 8px; background-color: #fff; }
+        input[readonly], input:disabled { background-color: var(--readonly-bg); color: var(--text-main); font-weight: 600; }
+
+        .actual-sale-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px; }
+        .actual-sale-header label { margin-bottom: 0; }
+        .calc-mini-btns { display: flex; gap: 5px; }
+        .mini-btn { padding: 3px 8px; font-size: 0.75rem; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold; }
+        .mini-btn.add { background-color: var(--success); }
+        .mini-btn.sub { background-color: var(--danger); }
+
+        .results-card { background: var(--card-bg); border-radius: 12px; padding: 15px; border: 1px solid var(--border-color); margin-bottom: 20px; }
+        .result-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--border-color); }
+        .result-row:last-child { border-bottom: none; }
+        .result-label { font-weight: bold; font-size: 1rem; color: var(--text-main); }
+        .result-value { font-size: 1.1rem; font-weight: bold; color: var(--primary); text-align: right; }
+        .result-value.incentive { font-size: 1.3rem; color: var(--success); }
+        .result-value.retro { color: var(--diamond); }
+        .result-value.danger { color: var(--danger); font-size: 0.9rem; }
+        .input-actual-incentive { width: 140px !important; text-align: right; font-weight: bold; color: var(--secondary); }
+
+        .sim-card { background: var(--card-bg); border-radius: 12px; padding: 20px; border: 1.5px solid var(--secondary); margin-top: 10px; }
+        .sim-title { font-size: 1rem; font-weight: bold; color: var(--secondary); text-align: center; margin-bottom: 15px; }
+        .sim-row { margin-bottom: 15px; }
+        .sim-row-header { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; font-size: 0.85rem; }
+        .sim-row-header span.val { color: var(--primary); }
+        .sim-target-range-input { display: flex; gap: 10px; align-items: center; }
+        .sim-target-range-input input[type="number"] { width: 70px; padding: 5px; text-align: center; }
+        .remain-sale { font-size: 0.85rem; color: var(--text-light); margin-top: 4px; font-weight: bold; }
+        .remain-sale span { color: var(--danger); }
+        input[type="range"] { width: 100%; height: 6px; background: var(--border-color); border-radius: 5px; outline: none; -webkit-appearance: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; background: var(--secondary); border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-box { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: fadeIn 0.2s ease-out; }
+        .modal-title { font-size: 1.2rem; font-weight: bold; color: var(--primary); margin-bottom: 15px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .modal-btn { padding: 8px 16px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .modal-btn.cancel { background: #e2e8f0; color: #475569; }
+        .modal-btn.confirm { background: var(--primary); color: white; }
+
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px; font-size: 0.9rem; display: none; z-index: 1000; text-align: center; }
+    </style>
+</head>
+<body>
+    <canvas id="fireworks"></canvas>
+
+    <div id="app-wrapper">
+        <header>
+            <div class="header-title">Incentive Calc</div>
+            <div class="header-actions">
+                <button class="header-btn backup" onclick="openBackup()">จัดการข้อมูล</button>
+                <button class="header-btn" onclick="saveData(true)">Save</button>
+            </div>
+        </header>
+
+        <div class="year-container">
+            <label>Year:</label>
+            <select id="global-year" onchange="changeYear()">
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+                <option value="2029">2029</option>
+                <option value="2030">2030</option>
+                <option value="2031">2031</option>
+            </select>
+        </div>
+
+        <div class="tabs" id="tabs-container"></div>
+        <div id="content-container"></div>
+        <div class="toast" id="toast">บันทึกข้อมูลเรียบร้อย!</div>
+    </div>
+
+    <div id="calc-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title" id="calc-modal-title">ปรับยอดขาย</div>
+            <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 10px;">ระบบจะนำตัวเลขนี้ไปบวก/ลบ กับยอดเดิมให้อัตโนมัติ</p>
+            <input type="text" id="calc-input" class="num-input" placeholder="ใส่ตัวเลข..." inputmode="numeric" style="font-size: 1.2rem; font-weight: bold; text-align: center;">
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="closeCalc()">ยกเลิก</button>
+                <button class="modal-btn confirm" onclick="applyCalc()">ตกลง</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="backup-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title">Backup / Restore ข้อมูล</div>
+            <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 10px;">หากแอปไม่จำค่า ให้คัดลอกโค้ดด้านล่างเก็บไว้ใน Note และนำมาวางใหม่เพื่อกู้ข้อมูลคืน</p>
+            <textarea id="backup-textarea" rows="6" style="width: 100%; border-radius: 8px; padding: 10px; font-family: monospace; border: 1px solid var(--border-color);"></textarea>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="closeBackup()">ปิด</button>
+                <button class="modal-btn confirm" onclick="restoreBackup()">นำเข้าข้อมูล</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const periods = [
+            { id: 'q1', label: 'Quarter 1', isHalf: false },
+            { id: 'q2', label: 'Quarter 2', isHalf: false },
+            { id: 'h1', label: 'Half 1', isHalf: true, source: ['q1', 'q2'] },
+            { id: 'q3', label: 'Quarter 3', isHalf: false },
+            { id: 'q4', label: 'Quarter 4', isHalf: false },
+            { id: 'h2', label: 'Half 2', isHalf: true, source: ['q3', 'q4'] }
+        ];
+
+        let fireworksTimer = null;
+        let isFireworksActive = false;
+        let activeCalcTarget = '';
+        let activeCalcMode = '';
+
+        function formatWithCommas(n) {
+            let parts = n.toString().split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            return parts.join('.');
+        }
+
+        function getRawNum(str) {
+            if (!str) return 0;
+            return parseFloat(str.toString().replace(/,/g, '')) || 0;
+        }
+
+        function getVal(id) { return getRawNum(document.getElementById(id)?.value); }
+
+        function setVal(id, val, comma = true) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (comma) {
+                let v = parseFloat(val) || 0;
+                let parts = v.toFixed(2).split('.');
+                parts[0] = parseInt(parts[0]).toLocaleString();
+                el.value = parts[0] + (parts[1] !== "00" ? "." + parts[1] : "");
+            } else {
+                el.value = val;
+            }
+        }
+
+        function initApp() {
+            const tabsContainer = document.getElementById('tabs-container');
+            const contentContainer = document.getElementById('content-container');
+
+            periods.forEach((p, index) => {
+                const tab = document.createElement('div');
+                tab.className = `tab ${index === 0 ? 'active' : ''}`;
+                tab.innerText = p.label;
+                tab.onclick = () => switchTab(p.id);
+                tab.id = `tab-btn-${p.id}`;
+                tabsContainer.appendChild(tab);
+
+                const content = document.createElement('div');
+                content.className = `tab-content ${index === 0 ? 'active' : ''}`;
+                content.id = `content-${p.id}`;
+                
+                const isReadonlyText = p.isHalf ? 'readonly disabled' : '';
+                
+                const calcUI_M = p.isHalf ? `<label>Actual Sale</label>` : `
+                    <div class="actual-sale-header">
+                        <label>Actual Sale</label>
+                        <div class="calc-mini-btns">
+                            <button class="mini-btn add" onclick="openCalc('${p.id}-actualM', 'add')">+ เพิ่ม</button>
+                            <button class="mini-btn sub" onclick="openCalc('${p.id}-actualM', 'sub')">- ลด</button>
+                        </div>
+                    </div>`;
+                const calcUI_T = p.isHalf ? `<label>Actual Sale</label>` : `
+                    <div class="actual-sale-header">
+                        <label>Actual Sale</label>
+                        <div class="calc-mini-btns">
+                            <button class="mini-btn add" onclick="openCalc('${p.id}-actualT', 'add')">+ เพิ่ม</button>
+                            <button class="mini-btn sub" onclick="openCalc('${p.id}-actualT', 'sub')">- ลด</button>
+                        </div>
+                    </div>`;
+
+                let resultRowsHTML = `
+                    <div class="result-row" style="background: #f1f5f9; padding: 10px; border-radius: 6px; margin-bottom: 5px;">
+                        <div class="result-label" style="color: var(--text-light); font-size: 0.95rem;">Total Target</div>
+                        <div class="result-value" id="${p.id}-totalTarget" style="color: var(--text-main); font-size: 1rem;">0 THB</div>
+                    </div>
+                    <div class="result-row" style="background: #f1f5f9; padding: 10px; border-radius: 6px; margin-bottom: 10px;">
+                        <div class="result-label" style="color: var(--text-light); font-size: 0.95rem;">Total Actual</div>
+                        <div class="result-value" id="${p.id}-totalActual" style="color: var(--text-main); font-size: 1rem;">0 THB</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="result-label">RANGE</div>
+                        <div class="result-value" id="${p.id}-range">0.00%</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="result-label">Payout %</div>
+                        <div class="result-value" id="${p.id}-payoutPct">0%</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="result-label">Incentive</div>
+                        <div class="result-value incentive" id="${p.id}-incentive">0 THB</div>
+                    </div>
+                `;
+
+                if (!p.isHalf) {
+                    resultRowsHTML += `
+                        <div class="result-row">
+                            <div class="result-label">Actual Incentive</div>
+                            <input type="text" inputmode="numeric" id="${p.id}-actualIncentive" class="input-actual-incentive num-input" placeholder="0">
+                        </div>
+                    `;
+                } else {
+                    resultRowsHTML += `
+                        <div class="result-row">
+                            <div class="result-label">IncentiveX2</div>
+                            <div class="result-value" id="${p.id}-incentiveX2">0 THB</div>
+                        </div>
+                        <div class="result-row">
+                            <div class="result-label">Actual Incentive</div>
+                            <div class="result-value" id="${p.id}-actualIncentiveHalf">0 THB</div>
+                        </div>
+                        <div class="result-row">
+                            <div class="result-label">Retro</div>
+                            <div class="result-value retro" id="${p.id}-retro">0 THB</div>
+                        </div>
+                    `;
+                }
+
+                const simHTML = p.isHalf ? '' : `
+                    <div class="sim-card" id="${p.id}-sim-card">
+                        <div class="sim-title">Calculation to achieve target range %</div>
+                        <div class="sim-row">
+                            <div class="sim-row-header"><span>Target Range %</span><span class="val" id="${p.id}-sim-target-val">100.0%</span></div>
+                            <div class="sim-target-range-input">
+                                <input type="range" id="${p.id}-sim-target" min="0" max="130" step="0.1" value="100">
+                                <input type="number" id="${p.id}-sim-target-num" min="0" max="130" step="0.1" value="100">
+                            </div>
+                        </div>
+                        <div class="sim-row">
+                            <div class="sim-row-header"><span>Mounjaro Target Actual %</span><span class="val" id="${p.id}-sim-m-val">100.0%</span></div>
+                            <input type="range" id="${p.id}-sim-m" min="0" max="250" step="0.1" value="100">
+                            <div class="remain-sale" id="${p.id}-sim-m-remain">Remain Sale: <span>0 THB</span></div>
+                        </div>
+                        <div class="sim-row">
+                            <div class="sim-row-header"><span>Trulicity Target Actual %</span><span class="val" id="${p.id}-sim-t-val">100.0%</span></div>
+                            <input type="range" id="${p.id}-sim-t" min="0" max="250" step="0.1" value="100" disabled>
+                            <div class="remain-sale" id="${p.id}-sim-t-remain">Remain Sale: <span>0 THB</span></div>
+                        </div>
+                    </div>
+                `;
+
+                content.innerHTML = `
+                    <div class="section-title">${p.label}</div>
+                    <div id="${p.id}-diamond-msg" class="diamond-msg" style="visibility:hidden;">คุณสุดยอดมาก Mission to Diamond 💎</div>
+                    <div class="grid-container">
+                        <div class="product-card">
+                            <div class="product-title mounjaro-title">Mounjaro</div>
+                            <div class="input-group"><label>Target</label><input type="text" id="${p.id}-targetM" class="num-input calc-trigger" ${isReadonlyText}></div>
+                            <div class="input-group"><label>Weight %</label><div class="input-wrapper"><input type="number" id="${p.id}-weightM" value="70" class="calc-trigger"><span>%</span></div></div>
+                            <div class="input-group">
+                                ${calcUI_M}
+                                <input type="text" id="${p.id}-actualM" class="num-input calc-trigger" ${isReadonlyText}>
+                            </div>
+                            <div class="input-group"><label>Actual %</label><div class="input-wrapper"><input type="text" id="${p.id}-actualPctM" readonly><span>%</span></div></div>
+                        </div>
+                        <div class="product-card">
+                            <div class="product-title trulicity-title">Trulicity</div>
+                            <div class="input-group"><label>Target</label><input type="text" id="${p.id}-targetT" class="num-input calc-trigger" ${isReadonlyText}></div>
+                            <div class="input-group"><label>Weight %</label><div class="input-wrapper"><input type="number" id="${p.id}-weightT" value="30" readonly><span>%</span></div></div>
+                            <div class="input-group">
+                                ${calcUI_T}
+                                <input type="text" id="${p.id}-actualT" class="num-input calc-trigger" ${isReadonlyText}>
+                            </div>
+                            <div class="input-group"><label>Actual %</label><div class="input-wrapper"><input type="text" id="${p.id}-actualPctT" readonly><span>%</span></div></div>
+                        </div>
+                    </div>
+                    <div class="results-card">${resultRowsHTML}</div>
+                    ${simHTML}
+                `;
+                contentContainer.appendChild(content);
+
+                if (!p.isHalf) {
+                    const sRange = document.getElementById(`${p.id}-sim-target`);
+                    const sNum = document.getElementById(`${p.id}-sim-target-num`);
+                    const sM = document.getElementById(`${p.id}-sim-m`);
+                    sRange.oninput = (e) => { sNum.value = e.target.value; runSimulator(p.id); };
+                    sNum.oninput = (e) => { sRange.value = e.target.value; runSimulator(p.id); };
+                    sM.oninput = () => runSimulator(p.id);
+                }
+            });
+
+            document.querySelectorAll('.num-input').forEach(el => {
+                el.addEventListener('input', (e) => {
+                    let cursor = e.target.selectionStart;
+                    let oldLen = e.target.value.length;
+                    let raw = e.target.value.replace(/,/g, '');
+                    if (!isNaN(raw) || raw === "") {
+                        e.target.value = raw === "" ? "" : formatWithCommas(raw);
+                        let newLen = e.target.value.length;
+                        e.target.setSelectionRange(cursor + (newLen - oldLen), cursor + (newLen - oldLen));
+                    }
+                    if(e.target.id !== 'calc-input') calculateAll();
+                });
+            });
+
+            document.querySelectorAll('.calc-trigger, #global-year').forEach(el => el.addEventListener('input', calculateAll));
+
+            loadData();
+            calculateAll();
+            requestAnimationFrame(animateFireworks);
+        }
+
+        // --- ระบบเครื่องคิดเลขย่อย ---
+        function openCalc(targetId, mode) {
+            activeCalcTarget = targetId;
+            activeCalcMode = mode;
+            let productLabel = targetId.includes('actualM') ? 'Mounjaro' : 'Trulicity';
+            document.getElementById('calc-modal-title').innerText = mode === 'add' ? `บวกยอดเพิ่ม (${productLabel})` : `ลบยอดออก (${productLabel})`;
+            document.getElementById('calc-input').value = '';
+            document.getElementById('calc-modal').style.display = 'flex';
+            setTimeout(() => document.getElementById('calc-input').focus(), 100);
+        }
+        function closeCalc() { document.getElementById('calc-modal').style.display = 'none'; }
+        function applyCalc() {
+            let inputVal = getRawNum(document.getElementById('calc-input').value);
+            if (inputVal > 0) {
+                let currentVal = getVal(activeCalcTarget);
+                let newVal = activeCalcMode === 'add' ? (currentVal + inputVal) : (currentVal - inputVal);
+                if (newVal < 0) newVal = 0;
+                setVal(activeCalcTarget, newVal, true);
+                calculateAll(); // การคำนวณจะบันทึกอัตโนมัติ
+            }
+            closeCalc();
+        }
+
+        // --- ระบบ Calculation Simulator ---
+        function runSimulator(pId) {
+            let tRange = parseFloat(document.getElementById(`${pId}-sim-target`).value);
+            let mSimSlider = document.getElementById(`${pId}-sim-m`);
+            let tSimSlider = document.getElementById(`${pId}-sim-t`);
+            
+            // ดึงค่า Actual ปัจจุบันเพื่อทำเป็นจุดเริ่มต้น (Min)
+            let actPctM = getRawNum(document.getElementById(`${pId}-actualPctM`).value);
+            let actPctT = getRawNum(document.getElementById(`${pId}-actualPctT`).value);
+
+            let wM = getVal(`${pId}-weightM`) / 100;
+            let wT = (100 - getVal(`${pId}-weightM`)) / 100;
+
+            let mSimPct = parseFloat(mSimSlider.value);
+            if(isNaN(mSimPct)) mSimPct = actPctM;
+
+            // คุมไม่ให้ Trulicity ต่ำกว่า Actual % โดยการล็อคขีดสูงสุดของ Mounjaro
+            let maxM = wM > 0 ? (tRange - (actPctT * wT)) / wM : 250;
+            if (maxM < actPctM) maxM = actPctM;
+
+            // ล็อค Scrollbar ให้ "Start จาก Actual%"
+            mSimSlider.min = actPctM.toFixed(1);
+            mSimSlider.max = maxM.toFixed(1);
+
+            if (mSimPct < actPctM) mSimPct = actPctM;
+            if (mSimPct > maxM) mSimPct = maxM;
+            mSimSlider.value = mSimPct.toFixed(1);
+
+            // คำนวณฝั่ง Trulicity
+            let tSimPct = wT > 0 ? (tRange - (mSimPct * wM)) / wT : actPctT;
+            if (tSimPct < actPctT) tSimPct = actPctT;
+
+            tSimSlider.min = actPctT.toFixed(1);
+            let maxT = wT > 0 ? (tRange - (actPctM * wM)) / wT : 250;
+            tSimSlider.max = maxT.toFixed(1);
+            tSimSlider.value = tSimPct.toFixed(1);
+
+            document.getElementById(`${pId}-sim-target-val`).innerText = tRange.toFixed(1) + '%';
+            document.getElementById(`${pId}-sim-m-val`).innerText = mSimPct.toFixed(1) + '%';
+            document.getElementById(`${pId}-sim-t-val`).innerText = tSimPct.toFixed(1) + '%';
+
+            let targetM = getVal(`${pId}-targetM`);
+            let targetT = getVal(`${pId}-targetT`);
+
+            let remainM = (mSimPct - actPctM) * targetM / 100;
+            let remainT = (tSimPct - actPctT) * targetT / 100;
+
+            document.querySelector(`#${pId}-sim-m-remain span`).innerText = formatWithCommas(Math.max(0, remainM).toFixed(2)) + " THB";
+            document.querySelector(`#${pId}-sim-t-remain span`).innerText = formatWithCommas(Math.max(0, remainT).toFixed(2)) + " THB";
+        }
+
+        function calculateAll() {
+            let ranges = {};
+
+            periods.forEach(p => {
+                if (!p.isHalf) {
+                    let wM = Math.min(100, Math.max(0, getVal(`${p.id}-weightM`)));
+                    document.getElementById(`${p.id}-weightT`).value = 100 - wM;
+                }
+            });
+
+            periods.filter(p => p.isHalf).forEach(h => {
+                let targetM = 0, targetT = 0, actM = 0, actT = 0;
+                h.source.forEach(s => {
+                    targetM += getVal(`${s}-targetM`); targetT += getVal(`${s}-targetT`);
+                    actM += getVal(`${s}-actualM`); actT += getVal(`${s}-actualT`);
+                });
+                setVal(`${h.id}-targetM`, targetM); setVal(`${h.id}-targetT`, targetT);
+                setVal(`${h.id}-actualM`, actM); setVal(`${h.id}-actualT`, actT);
+            });
+
+            periods.forEach(p => {
+                let tM = getVal(`${p.id}-targetM`), tT = getVal(`${p.id}-targetT`);
+                let aM = getVal(`${p.id}-actualM`), aT = getVal(`${p.id}-actualT`);
+                let wM = getVal(`${p.id}-weightM`) / 100, wT = (100 - getVal(`${p.id}-weightM`)) / 100;
+
+                let totalTarget = tM + tT;
+                let totalActual = aM + aT;
+                document.getElementById(`${p.id}-totalTarget`).innerText = formatWithCommas(totalTarget.toFixed(2)) + " THB";
+                document.getElementById(`${p.id}-totalActual`).innerText = formatWithCommas(totalActual.toFixed(2)) + " THB";
+
+                let pctM = tM > 0 ? (aM / tM) * 100 : 0;
+                let pctT = tT > 0 ? (aT / tT) * 100 : 0;
+                document.getElementById(`${p.id}-actualPctM`).value = pctM.toFixed(2);
+                document.getElementById(`${p.id}-actualPctT`).value = pctT.toFixed(2);
+
+                let realRange = (pctM * wM) + (pctT * wT);
+                realRange = parseFloat(realRange.toFixed(2)); // ล็อคทศนิยมให้เป๊ะตรงกับหน้าจอก่อน
+                
+                // แก้ไขขีดจำกัดสูงสุดของ RANGE ในแท็บ Half จาก 120 เป็น 130
+                let calcRange = p.isHalf && realRange > 130 ? 130 : realRange;
+                ranges[p.id] = calcRange;
+
+                let rangeEl = document.getElementById(`${p.id}-range`);
+                if (p.isHalf && realRange > 130) {
+                    rangeEl.innerText = realRange.toFixed(2) + "% (MAX 130%)";
+                } else {
+                    rangeEl.innerText = realRange.toFixed(2) + "%";
+                }
+
+                let payout = getPayout(calcRange);
+                document.getElementById(`${p.id}-payoutPct`).innerText = payout + "%";
+
+                let inc = (payout / 100) * 120000;
+                let incEl = document.getElementById(`${p.id}-incentive`);
+                incEl.innerText = formatWithCommas(inc.toFixed(2)) + " THB";
+                incEl.dataset.raw = inc;
+
+                const msg = document.getElementById(`${p.id}-diamond-msg`);
+                msg.style.visibility = realRange >= 130 ? 'visible' : 'hidden';
+
+                if (!p.isHalf) {
+                    let simCard = document.getElementById(`${p.id}-sim-card`);
+                    if (simCard) {
+                        if (realRange >= 130) {
+                            simCard.style.display = 'none';
+                        } else {
+                            simCard.style.display = 'block';
+                            let simTargetSlider = document.getElementById(`${p.id}-sim-target`);
+                            let simTargetNum = document.getElementById(`${p.id}-sim-target-num`);
+                            
+                            let currentMin = Math.max(0, realRange);
+                            simTargetSlider.min = currentMin.toFixed(1);
+                            simTargetNum.min = currentMin.toFixed(1);
+
+                            if (parseFloat(simTargetSlider.value) < currentMin) {
+                                simTargetSlider.value = currentMin.toFixed(1);
+                                simTargetNum.value = currentMin.toFixed(1);
+                            }
+                            
+                            runSimulator(p.id);
+                        }
+                    }
+                }
+            });
+
+            periods.filter(p => p.isHalf).forEach(h => {
+                let incBase = parseFloat(document.getElementById(`${h.id}-incentive`).dataset.raw || 0);
+                let incX2 = incBase * 2;
+                document.getElementById(`${h.id}-incentiveX2`).innerText = formatWithCommas(incX2.toFixed(2)) + " THB";
+
+                let actSum = h.source.reduce((s, q) => s + getVal(`${q}-actualIncentive`), 0);
+                document.getElementById(`${h.id}-actualIncentiveHalf`).innerText = formatWithCommas(actSum.toFixed(2)) + " THB";
+
+                let retroEl = document.getElementById(`${h.id}-retro`);
+                if (h.source.some(s => ranges[s] < 80)) {
+                    retroEl.className = "result-value danger";
+                    retroEl.innerText = "ไม่ได้ มีQuarterไม่ถึง80%";
+                } else {
+                    let retro = incX2 - actSum;
+                    if (retro < 0) {
+                        retroEl.className = "result-value danger";
+                        retroEl.innerText = "ได้มาเยอะแล้ว ไม่มีให้";
+                    } else {
+                        retroEl.className = "result-value retro";
+                        retroEl.innerText = formatWithCommas(retro.toFixed(2)) + " THB";
+                    }
+                }
+            });
+
+            // *** ระบบ Auto-Save: สั่งเซฟทุกครั้งที่มีการคำนวณแบบเงียบๆ (ไม่ขึ้น Toast รบกวน) ***
+            saveData(false);
+        }
+
+        function getPayout(r) {
+            let v = Math.floor(parseFloat(r.toFixed(2))); 
+            if (v < 100) return 0;
+            if (v >= 130) return 175;
+            const table = { 
+                100:100, 101:102, 102:104, 103:106, 104:108, 105:110, 106:112, 107:114, 108:116, 109:118, 
+                110:122, 111:124, 112:126, 113:128, 114:130, 115:132, 116:134, 117:136, 118:138, 119:140, 
+                120:145, 121:148, 122:150, 123:153, 124:155, 125:158, 126:161, 127:164, 128:167, 129:170 
+            };
+            return table[v] || 0;
+        }
+
+        function switchTab(id) {
+            document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-btn-${id}`).classList.add('active');
+            document.getElementById(`content-${id}`).classList.add('active');
+            
+            const rangeVal = parseFloat(document.getElementById(`${id}-range`).innerText);
+            if (rangeVal >= 130) triggerFireworks();
+            else isFireworksActive = false;
+        }
+
+        function changeYear() {
+            loadData();
+            calculateAll();
+        }
+
+        function showToast(msg, isError = false) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.backgroundColor = isError ? "rgba(239, 68, 68, 0.9)" : "rgba(16, 185, 129, 0.9)";
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 2500);
+        }
+
+        function saveData(triggerToast = false) {
+            try {
+                const year = document.getElementById('global-year').value;
+                let allData = {};
+                try { allData = JSON.parse(localStorage.getItem('incentiveDataMaster') || '{}'); } catch(e) {}
+                
+                let yearData = {};
+                periods.forEach(p => {
+                    ['targetM', 'targetT', 'weightM', 'actualM', 'actualT', 'actualIncentive'].forEach(f => {
+                        let el = document.getElementById(`${p.id}-${f}`);
+                        if (el) yearData[`${p.id}-${f}`] = el.value;
+                    });
+                });
+                
+                allData[year] = yearData;
+                localStorage.setItem('incentiveDataMaster', JSON.stringify(allData));
+                
+                if (triggerToast) showToast("บันทึกข้อมูลเรียบร้อย!");
+            } catch (error) {
+                if (triggerToast) alert("เบราว์เซอร์ปิดกั้นการ Save ข้อมูลอัตโนมัติ \n\nโปรดใช้ฟังก์ชัน 'จัดการข้อมูล' ด้านบน");
+            }
+        }
+
+        function loadData() {
+            try {
+                const year = document.getElementById('global-year').value;
+                const allData = JSON.parse(localStorage.getItem('incentiveDataMaster') || '{}');
+                const yearData = allData[year] || {};
+                
+                periods.forEach(p => {
+                    ['targetM', 'targetT', 'weightM', 'actualM', 'actualT', 'actualIncentive'].forEach(f => {
+                        let el = document.getElementById(`${p.id}-${f}`);
+                        if (el) el.value = yearData[`${p.id}-${f}`] || (f === 'weightM' ? '70' : '');
+                    });
+                });
+            } catch (error) {}
+        }
+
+        function openBackup() {
+            saveData(false);
+            let dataStr = "";
+            try { dataStr = localStorage.getItem('incentiveDataMaster') || '{}'; } catch(e) {}
+            document.getElementById('backup-textarea').value = dataStr;
+            document.getElementById('backup-modal').style.display = 'flex';
+        }
+        function closeBackup() { document.getElementById('backup-modal').style.display = 'none'; }
+        function restoreBackup() {
+            let pastedData = document.getElementById('backup-textarea').value;
+            if (!pastedData || pastedData.trim() === "") return;
+            try {
+                JSON.parse(pastedData);
+                localStorage.setItem('incentiveDataMaster', pastedData);
+                loadData();
+                calculateAll();
+                closeBackup();
+                showToast("นำเข้าข้อมูลสำเร็จ!");
+            } catch (error) {
+                alert("โค้ดข้อมูลไม่ถูกต้อง โปรดตรวจสอบอีกครั้ง");
+            }
+        }
+
+        // --- Fireworks ---
+        function triggerFireworks() {
+            clearTimeout(fireworksTimer);
+            isFireworksActive = true;
+            fireworksTimer = setTimeout(() => { isFireworksActive = false; }, 3000);
+        }
+        const canvas = document.getElementById('fireworks');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        let particles = [];
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x; this.y = y; this.color = color;
+                this.vel = { x: (Math.random()-0.5)*8, y: (Math.random()-0.5)*8 };
+                this.alpha = 1; this.friction = 0.96; this.gravity = 0.08;
+            }
+            update() {
+                this.vel.x *= this.friction; this.vel.y *= this.friction; this.vel.y += this.gravity;
+                this.x += this.vel.x; this.y += this.vel.y; this.alpha -= 0.015;
+            }
+            draw() {
+                ctx.save(); ctx.globalAlpha = this.alpha; ctx.beginPath();
+                ctx.arc(this.x, this.y, 2, 0, Math.PI*2); ctx.fillStyle = this.color; ctx.fill(); ctx.restore();
+            }
+        }
+        function animateFireworks() {
+            requestAnimationFrame(animateFireworks);
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            if (isFireworksActive && Math.random() < 0.1) {
+                let x = Math.random()*canvas.width, y = Math.random()*canvas.height/2;
+                let c = ['#8B5CF6','#00B5E2','#542078'][Math.floor(Math.random()*3)];
+                for(let i=0; i<30; i++) particles.push(new Particle(x,y,c));
+            }
+            particles = particles.filter(p => p.alpha > 0);
+            particles.forEach(p => { p.update(); p.draw(); });
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
