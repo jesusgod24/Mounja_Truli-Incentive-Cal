@@ -3,115 +3,351 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
+
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="IncentiveApp">
-    
+
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#542078">
 
     <title>Incentive Calculator</title>
+
+    <!-- ฟอนต์ไทย (โหลดแบบไม่บล็อกหน้าเว็บ ถ้าออฟไลน์จะใช้ฟอนต์ของเครื่องแทน) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+
     <style>
         :root {
             --primary: #542078;
+            --primary-light: #7a3aa8;
+            --primary-dark: #3a1158;
             --secondary: #00B5E2;
-            --bg-color: #f8f6fb;
+            --secondary-dark: #0086ad;
+            --bg-color: #f3f0f9;
             --card-bg: #ffffff;
-            --text-main: #333333;
-            --text-light: #666666;
-            --border-color: #e0dced;
-            --readonly-bg: #f0f0f0;
+            --text-main: #241b33;
+            --text-light: #6b6380;
+            --text-muted: #9790aa;
+            --border-color: #e6e0f0;
+            --readonly-bg: #f2eef8;
             --success: #10B981;
+            --success-dark: #047857;
             --warning: #F59E0B;
+            --warning-dark: #b45309;
             --danger: #EF4444;
+            --danger-dark: #dc2626;
             --diamond: #8B5CF6;
+            --diamond-dark: #6d28d9;
+
+            --shadow-sm: 0 1px 2px rgba(42,16,74,.06), 0 1px 3px rgba(42,16,74,.05);
+            --shadow-md: 0 1px 2px rgba(42,16,74,.05), 0 6px 16px -4px rgba(42,16,74,.12), 0 14px 32px -14px rgba(42,16,74,.18);
+            --shadow-lg: 0 2px 4px rgba(42,16,74,.05), 0 12px 28px -8px rgba(42,16,74,.20), 0 30px 60px -28px rgba(42,16,74,.30);
+            --radius-lg: 18px;
+            --content-width: 820px;
         }
 
         /* ป้องกันผู้ใช้เผลอกดคลุมดำข้อความบนมือถือเหมือนแอปจริง */
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: transparent; color: var(--text-main); padding-bottom: 40px; position: relative; user-select: none; -webkit-user-select: none; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Prompt", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+        html { background-color: var(--bg-color); }
+        body { background-color: var(--bg-color); color: var(--text-main); position: relative; user-select: none; -webkit-user-select: none; -webkit-font-smoothing: antialiased; }
         input, select, textarea { user-select: auto; -webkit-user-select: auto; } /* แต่ยอมให้คลุมดำตัวเลขในช่องกรอกได้ */
-        
-        #app-wrapper { background-color: var(--bg-color); min-height: 100vh; }
-        canvas#fireworks { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 999; }
+        button { font: inherit; }
 
-        /* Header (มีการเพิ่ม padding-top สำหรับรอยบาก iPhone) */
-        header { background-color: var(--primary); color: white; padding: max(16px, env(safe-area-inset-top)) 15px 16px 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .header-title { font-size: 1.1rem; font-weight: bold; }
-        .header-actions { display: flex; gap: 8px; }
-        .header-btn { background-color: var(--secondary); color: white; border: none; padding: 8px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; cursor: pointer; }
-        .header-btn.backup { background-color: #3b82f6; }
+        /* overflow-x: clip กันไม่ให้มีอะไรล้นจอแนวนอน (ไม่ทำให้ sticky เสีย) */
+        #app-wrapper {
+            min-height: 100vh; overflow-x: clip; padding-bottom: 24px;
+            background:
+                radial-gradient(900px 420px at -10% -5%, rgba(84,32,120,.13), transparent 60%),
+                radial-gradient(700px 380px at 110% 10%, rgba(0,181,226,.12), transparent 60%),
+                var(--bg-color);
+        }
+        canvas#fireworks { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; }
 
-        .year-container { background: var(--card-bg); padding: 15px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-color); }
-        .year-container label { font-weight: bold; font-size: 1.1rem; color: var(--primary); }
-        #global-year { padding: 8px; font-size: 1.1rem; border: 1px solid var(--border-color); border-radius: 8px; background: white; color: var(--primary); font-weight: bold; }
+        /* ---------- Header ---------- */
+        header {
+            position: relative; overflow: hidden; color: white;
+            padding: max(14px, env(safe-area-inset-top)) 16px 16px 16px;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%);
+            box-shadow: 0 10px 30px -14px rgba(58,17,88,.7);
+        }
+        header::before {
+            content: ''; position: absolute; inset: 0; pointer-events: none;
+            background:
+                radial-gradient(420px 140px at 88% -30%, rgba(0,181,226,.45), transparent 70%),
+                radial-gradient(320px 120px at 8% 130%, rgba(255,255,255,.14), transparent 70%);
+        }
+        .header-inner { position: relative; max-width: var(--content-width); margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .brand-icon {
+            flex: 0 0 auto; width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center;
+            font-weight: 700; font-size: 1.2rem;
+            background: linear-gradient(145deg, rgba(255,255,255,.30), rgba(255,255,255,.06));
+            border: 1px solid rgba(255,255,255,.32);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 6px 14px rgba(0,0,0,.22);
+        }
+        .brand-text { min-width: 0; }
+        .header-title { font-size: 1.15rem; font-weight: 700; letter-spacing: .2px; line-height: 1.25; }
+        .save-status { display: flex; align-items: center; gap: 6px; font-size: .74rem; opacity: .92; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+        .save-status #save-text { overflow: hidden; text-overflow: ellipsis; }
+        .save-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: #c4b5fd; box-shadow: 0 0 0 3px rgba(196,181,253,.25); }
+        .save-status.saved .save-dot { background: #34d399; box-shadow: 0 0 0 3px rgba(52,211,153,.28); }
+        .save-status.error .save-dot { background: #f87171; box-shadow: 0 0 0 3px rgba(248,113,113,.3); }
+        .save-status.error { color: #fecaca; opacity: 1; }
+        .save-status.flash .save-dot { animation: ping .7s ease-out; }
+        @keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(52,211,153,.75); } 100% { box-shadow: 0 0 0 9px rgba(52,211,153,0); } }
 
-        .tabs { display: flex; overflow-x: auto; background: var(--card-bg); padding: 10px 10px 0 10px; border-bottom: 2px solid var(--border-color); }
+        .year-picker {
+            flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 12px; border-radius: 999px;
+            background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.28);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 6px 14px -4px rgba(0,0,0,.25);
+        }
+        .year-picker label { font-size: .8rem; font-weight: 600; opacity: .9; }
+        #global-year {
+            -webkit-appearance: none; appearance: none; cursor: pointer;
+            padding: 6px 30px 6px 14px; border: none; border-radius: 999px;
+            font-size: 1rem; font-weight: 700; color: var(--primary);
+            background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%23542078' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+            box-shadow: 0 2px 6px rgba(0,0,0,.18), inset 0 -2px 0 rgba(84,32,120,.08);
+        }
+        #global-year:focus { outline: none; box-shadow: 0 0 0 3px rgba(255,255,255,.45); }
+
+        /* ---------- Tabs (ติดด้านบนเวลาเลื่อน) ---------- */
+        .tabs-bar {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(255,255,255,.82);
+            -webkit-backdrop-filter: saturate(180%) blur(14px); backdrop-filter: saturate(180%) blur(14px);
+            border-bottom: 1px solid rgba(84,32,120,.08);
+            box-shadow: 0 8px 20px -14px rgba(42,16,74,.45);
+        }
+        .tabs { position: relative; max-width: var(--content-width); margin: 0 auto; display: flex; align-items: center; gap: 6px; overflow-x: auto; padding: 10px 16px; scrollbar-width: none; }
         .tabs::-webkit-scrollbar { display: none; }
-        .tab { padding: 12px 20px; font-size: 0.9rem; font-weight: 600; color: var(--text-light); border-bottom: 3px solid transparent; white-space: nowrap; cursor: pointer; }
-        .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+        .tabs > :first-child { margin-left: auto; }
+        .tabs > :last-child { margin-right: auto; }
+        .tab {
+            flex: 0 0 auto; padding: 8px 16px; border-radius: 999px; border: 1px solid transparent; background: transparent;
+            font-size: .88rem; font-weight: 600; color: var(--text-light); white-space: nowrap; cursor: pointer;
+            transition: background .2s, color .2s, box-shadow .2s;
+        }
+        .tab:hover { background: rgba(84,32,120,.07); color: var(--primary); }
+        .tab.half { color: #4b3f66; }
+        .tab.active {
+            color: #fff; background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            box-shadow: 0 6px 14px -4px rgba(84,32,120,.55), inset 0 1px 0 rgba(255,255,255,.25);
+        }
+        .tab.year { border-color: rgba(0,181,226,.35); }
+        .tab.year.active { border-color: transparent; background: linear-gradient(135deg, var(--primary) 0%, #4c5bd4 55%, var(--secondary) 100%); box-shadow: 0 6px 16px -4px rgba(0,134,173,.55), inset 0 1px 0 rgba(255,255,255,.25); }
+        .tab-sep { flex: 0 0 1px; align-self: stretch; background: var(--border-color); margin: 6px 2px; }
 
-        .tab-content { display: none; padding: 20px; animation: fadeIn 0.3s ease-in-out; }
-        .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        /* ---------- Content ---------- */
+        .tab-content { display: none; max-width: var(--content-width); margin: 0 auto; padding: 22px 16px 16px; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-        .section-title { font-size: 1.4rem; color: var(--primary); margin-bottom: 5px; font-weight: bold; text-align: center; }
-        .diamond-msg { text-align: center; color: var(--diamond); font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; animation: pulse 1.5s infinite; }
+        .section-head { text-align: center; margin-bottom: 16px; }
+        .section-title {
+            font-size: 1.6rem; font-weight: 700; line-height: 1.25;
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-light) 60%, var(--secondary));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .section-sub { margin-top: 2px; font-size: .85rem; color: var(--text-light); }
+
+        .diamond-wrap { display: none; text-align: center; margin-bottom: 16px; }
+        .diamond-wrap.show { display: block; }
+        .diamond-msg {
+            display: inline-block; padding: 8px 18px; border-radius: 999px;
+            font-size: 1.05rem; font-weight: 700; color: var(--diamond-dark);
+            background: linear-gradient(135deg, #ede9fe, #e0f7fd); border: 1px solid rgba(139,92,246,.3);
+            box-shadow: 0 8px 18px -8px rgba(139,92,246,.6);
+        }
+        .diamond-wrap.show .diamond-msg { animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
-        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .product-card { background: var(--card-bg); border-radius: 12px; padding: 15px; border: 1px solid var(--border-color); }
-        .product-title { font-size: 1.1rem; font-weight: bold; text-align: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--border-color); }
-        .mounjaro-title { color: var(--primary); border-bottom-color: var(--primary); }
-        .trulicity-title { color: var(--secondary); border-bottom-color: var(--secondary); }
+        .grid-container { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-bottom: 18px; }
+        .product-card {
+            background: var(--card-bg); border-radius: var(--radius-lg); overflow: hidden;
+            border: 1px solid rgba(84,32,120,.07); box-shadow: var(--shadow-md);
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+        @media (hover: hover) { .product-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); } }
+        .product-title { position: relative; padding: 12px 14px; color: #fff; font-size: 1.05rem; font-weight: 700; text-align: center; letter-spacing: .3px; text-shadow: 0 1px 2px rgba(0,0,0,.2); }
+        .product-title::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(255,255,255,.22), transparent 60%); }
+        .mounjaro-title { background: linear-gradient(135deg, var(--primary-dark), var(--primary) 55%, var(--primary-light)); }
+        .trulicity-title { background: linear-gradient(135deg, #00739a, var(--secondary) 60%, #4fd3f3); }
+        .product-body { padding: 14px; }
 
         .input-group { margin-bottom: 12px; }
-        .input-group label { display: block; font-size: 0.8rem; color: var(--text-light); margin-bottom: 5px; font-weight: 600; }
+        .input-group:last-child { margin-bottom: 0; }
+        .input-group label { display: block; font-size: 0.78rem; color: var(--text-light); margin-bottom: 6px; font-weight: 600; }
         .input-wrapper { position: relative; display: flex; align-items: center; }
-        .input-wrapper span { position: absolute; right: 10px; color: var(--text-light); font-size: 0.8rem; pointer-events: none; }
+        .input-wrapper span { position: absolute; right: 12px; color: var(--text-muted); font-size: 0.8rem; pointer-events: none; }
 
-        input[type="text"], input[type="number"], select { width: 100%; padding: 10px; font-size: 1rem; border: 1px solid var(--border-color); border-radius: 8px; background-color: #fff; }
-        input[readonly], input:disabled { background-color: var(--readonly-bg); color: var(--text-main); font-weight: 600; }
+        input[type="text"], input[type="number"] {
+            width: 100%; padding: 10px 12px; font-size: 1rem; color: var(--text-main);
+            border: 1px solid var(--border-color); border-radius: 10px; background-color: #fcfbfe;
+            box-shadow: inset 0 1px 2px rgba(42,16,74,.07);
+            font-variant-numeric: tabular-nums; transition: border-color .15s, box-shadow .15s, background-color .15s;
+        }
+        input[type="text"]:focus, input[type="number"]:focus { outline: none; background-color: #fff; border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(122,58,168,.18), inset 0 1px 2px rgba(42,16,74,.06); }
+        input[readonly], input:disabled { background-color: var(--readonly-bg); color: var(--text-main); -webkit-text-fill-color: var(--text-main); opacity: 1; font-weight: 600; border-color: transparent; box-shadow: none; }
+        input[readonly]:focus { border-color: transparent; box-shadow: none; }
 
-        .actual-sale-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px; }
-        .actual-sale-header label { margin-bottom: 0; }
+        .actual-sale-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 6px; margin-bottom: 6px; }
+        .actual-sale-header label { margin-bottom: 0 !important; }
         .calc-mini-btns { display: flex; gap: 5px; }
-        .mini-btn { padding: 3px 8px; font-size: 0.75rem; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold; }
-        .mini-btn.add { background-color: var(--success); }
-        .mini-btn.sub { background-color: var(--danger); }
+        .mini-btn {
+            padding: 3px 9px; border: none; border-radius: 999px; color: white; cursor: pointer;
+            font-size: 0.72rem; font-weight: 700;
+            box-shadow: 0 3px 8px -3px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.3);
+            transition: transform .1s;
+        }
+        .mini-btn:active { transform: translateY(1px) scale(.97); }
+        .mini-btn.add { background: linear-gradient(180deg, #34d399, #059669); }
+        .mini-btn.sub { background: linear-gradient(180deg, #f87171, #dc2626); }
 
-        .results-card { background: var(--card-bg); border-radius: 12px; padding: 15px; border: 1px solid var(--border-color); margin-bottom: 20px; }
-        .result-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--border-color); }
+        /* ---------- Results ---------- */
+        .results-card {
+            position: relative; overflow: hidden; margin-bottom: 18px; padding: 20px 18px 16px;
+            background: var(--card-bg); border-radius: 20px; border: 1px solid rgba(84,32,120,.07); box-shadow: var(--shadow-lg);
+        }
+        .results-card::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: linear-gradient(90deg, var(--primary), var(--primary-light), var(--secondary)); }
+        .stat-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-bottom: 6px; }
+        .stat-tile { min-width: 0; padding: 10px 12px; border-radius: 12px; background: linear-gradient(180deg, #faf8fd, #f2eef8); border: 1px solid var(--border-color); box-shadow: inset 0 1px 0 #fff; }
+        .stat-label { font-size: .74rem; font-weight: 600; color: var(--text-light); }
+        .stat-value { margin-top: 2px; font-size: 1rem; font-weight: 700; color: var(--text-main); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+        .result-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 2px; border-bottom: 1px dashed var(--border-color); }
         .result-row:last-child { border-bottom: none; }
-        .result-label { font-weight: bold; font-size: 1rem; color: var(--text-main); }
-        .result-value { font-size: 1.1rem; font-weight: bold; color: var(--primary); text-align: right; }
-        .result-value.incentive { font-size: 1.3rem; color: var(--success); }
-        .result-value.retro { color: var(--diamond); }
-        .result-value.danger { color: var(--danger); font-size: 0.9rem; }
-        .input-actual-incentive { width: 140px !important; text-align: right; font-weight: bold; color: var(--secondary); }
+        .result-row.flat { padding: 0; border-bottom: none; }
+        .result-label { font-weight: 600; font-size: 0.95rem; color: var(--text-main); }
+        .result-label small { display: block; margin-top: 1px; font-size: .72rem; font-weight: 500; color: var(--text-muted); }
+        .result-value { font-size: 1.08rem; font-weight: 700; color: var(--primary); text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+        .result-value.incentive { font-size: 1.35rem; color: var(--success-dark); }
+        .result-value.retro { color: var(--diamond-dark); font-size: 1.3rem; }
+        .result-value.danger { color: var(--danger-dark); font-size: 0.9rem; }
+        .input-actual-incentive { width: 150px !important; flex: 0 0 auto; text-align: right; font-weight: 700; color: var(--secondary-dark) !important; }
 
-        .sim-card { background: var(--card-bg); border-radius: 12px; padding: 20px; border: 1.5px solid var(--secondary); margin-top: 10px; }
-        .sim-title { font-size: 1rem; font-weight: bold; color: var(--secondary); text-align: center; margin-bottom: 15px; }
-        .sim-row { margin-bottom: 15px; }
-        .sim-row-header { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; font-size: 0.85rem; }
-        .sim-row-header span.val { color: var(--primary); }
-        .sim-target-range-input { display: flex; gap: 10px; align-items: center; }
-        .sim-target-range-input input[type="number"] { width: 70px; padding: 5px; text-align: center; }
-        .remain-sale { font-size: 0.85rem; color: var(--text-light); margin-top: 4px; font-weight: bold; }
-        .remain-sale span { color: var(--danger); }
-        input[type="range"] { width: 100%; height: 6px; background: var(--border-color); border-radius: 5px; outline: none; -webkit-appearance: none; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; background: var(--secondary); border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+        .range-block { padding: 12px 2px; border-bottom: 1px dashed var(--border-color); }
 
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-box { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); animation: fadeIn 0.2s ease-out; }
-        .modal-title { font-size: 1.2rem; font-weight: bold; color: var(--primary); margin-bottom: 15px; }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-        .modal-btn { padding: 8px 16px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .modal-btn.cancel { background: #e2e8f0; color: #475569; }
-        .modal-btn.confirm { background: var(--primary); color: white; }
+        /* แถบ Progress RANGE */
+        .meter { margin-top: 10px; }
+        .meter-track { position: relative; height: 12px; border-radius: 999px; background: linear-gradient(180deg, #e6e0ef, #f3f0f8); box-shadow: inset 0 1px 3px rgba(42,16,74,.18); }
+        .meter-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; transition: width .45s cubic-bezier(.2,.8,.2,1); }
+        .meter-fill::after { content: ''; position: absolute; left: 3px; right: 3px; top: 2px; height: 3px; border-radius: 999px; background: rgba(255,255,255,.45); }
+        .meter-fill.lv-danger { background: linear-gradient(90deg, #fca5a5, #ef4444); }
+        .meter-fill.lv-warning { background: linear-gradient(90deg, #fcd34d, #f59e0b); }
+        .meter-fill.lv-success { background: linear-gradient(90deg, #6ee7b7, #10b981); }
+        .meter-fill.lv-diamond { background: linear-gradient(90deg, #c4b5fd, #8b5cf6 60%, #00b5e2); }
+        .meter-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 2px; background: rgba(36,27,51,.45); box-shadow: 0 0 0 1px rgba(255,255,255,.85); }
+        .meter-scale { position: relative; height: 16px; margin-top: 4px; font-size: .68rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+        .meter-scale span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+        .meter-scale span:first-child { transform: none; }
+        .meter-status { margin-top: 4px; font-size: .78rem; font-weight: 600; }
+        .lv-danger.meter-status { color: var(--danger-dark); }
+        .lv-warning.meter-status { color: var(--warning-dark); }
+        .lv-success.meter-status { color: var(--success-dark); }
+        .lv-diamond.meter-status { color: var(--diamond-dark); }
 
-        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px; font-size: 0.9rem; display: none; z-index: 1000; text-align: center; }
+        .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .chip { padding: 3px 9px; border-radius: 999px; font-size: .72rem; font-weight: 600; background: #f3eff9; color: var(--text-light); border: 1px solid var(--border-color); font-variant-numeric: tabular-nums; }
+        .chip.low { background: #fef2f2; color: var(--danger-dark); border-color: #fecaca; }
+
+        .retro-box {
+            margin-top: 12px; padding: 14px; border-radius: 14px;
+            background: linear-gradient(135deg, rgba(139,92,246,.10), rgba(0,181,226,.10));
+            border: 1px solid rgba(139,92,246,.28); box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+        }
+        .retro-box.is-no { background: linear-gradient(135deg, rgba(239,68,68,.07), rgba(245,158,11,.06)); border-color: rgba(239,68,68,.25); }
+        .retro-box .result-label { font-size: 1.05rem; }
+        .retro-formula { margin-top: 6px; font-size: .75rem; color: var(--text-light); text-align: right; font-variant-numeric: tabular-nums; }
+
+        /* ---------- Simulator ---------- */
+        .sim-card {
+            position: relative; overflow: hidden; padding: 20px 18px 6px; border-radius: 20px;
+            background: linear-gradient(180deg, #ffffff, #f6fcfe);
+            border: 1px solid rgba(0,181,226,.28); box-shadow: var(--shadow-md);
+        }
+        .sim-card::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: linear-gradient(90deg, var(--secondary), #4fd3f3); }
+        .sim-title { font-size: 1rem; font-weight: 700; color: var(--secondary-dark); text-align: center; margin-bottom: 16px; }
+        .sim-row { margin-bottom: 16px; }
+        .sim-row-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600; font-size: 0.85rem; }
+        .sim-row-header span.val { color: var(--primary); font-weight: 700; font-variant-numeric: tabular-nums; }
+        .sim-target-range-input { display: flex; gap: 12px; align-items: center; }
+        .sim-target-range-input input[type="number"] { flex: 0 0 84px; width: 84px; padding: 6px; text-align: center; }
+        .remain-sale { font-size: 0.85rem; color: var(--text-light); margin-top: 6px; font-weight: 600; }
+        .remain-sale span { color: var(--danger-dark); font-variant-numeric: tabular-nums; }
+
+        input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 999px; outline: none; border: none; background: linear-gradient(180deg, #e2dcec, #f1edf7); box-shadow: inset 0 1px 2px rgba(42,16,74,.2); }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 3px solid #fff; background: radial-gradient(circle at 35% 30%, #7fe3fa, var(--secondary) 55%, var(--secondary-dark)); box-shadow: 0 2px 8px rgba(0,80,110,.45); }
+        input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; cursor: pointer; border: 3px solid #fff; background: radial-gradient(circle at 35% 30%, #7fe3fa, var(--secondary) 55%, var(--secondary-dark)); box-shadow: 0 2px 8px rgba(0,80,110,.45); }
+        input[type="range"]:disabled::-webkit-slider-thumb { cursor: default; background: radial-gradient(circle at 35% 30%, #c4b5fd, var(--primary-light) 55%, var(--primary)); box-shadow: 0 2px 8px rgba(84,32,120,.4); }
+        input[type="range"]:disabled::-moz-range-thumb { cursor: default; background: radial-gradient(circle at 35% 30%, #c4b5fd, var(--primary-light) 55%, var(--primary)); }
+
+        /* ---------- Yearly summary ---------- */
+        .summary-card { padding: 18px 16px 14px; border-radius: 20px; background: var(--card-bg); border: 1px solid rgba(84,32,120,.07); box-shadow: var(--shadow-md); }
+        .summary-title { font-size: 1rem; font-weight: 700; color: var(--primary); margin-bottom: 10px; }
+        .summary-title small { display: block; font-size: .72rem; font-weight: 500; color: var(--text-muted); }
+        .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table.summary { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .82rem; font-variant-numeric: tabular-nums; }
+        table.summary th { padding: 8px 6px; font-size: .72rem; font-weight: 600; color: var(--text-light); text-align: right; white-space: nowrap; border-bottom: 2px solid var(--border-color); }
+        table.summary td { padding: 9px 6px; text-align: right; white-space: nowrap; border-bottom: 1px solid #f0ecf6; }
+        table.summary th:first-child, table.summary td:first-child { text-align: left; }
+        table.summary tbody tr { cursor: pointer; transition: background .15s; }
+        table.summary tbody tr:hover td { background: #f6f3fb; }
+        table.summary tr.row-half td { background: #faf8fd; font-weight: 600; }
+        table.summary tr.row-year td { font-weight: 700; color: var(--primary); background: #eeeafa; }
+        table.summary tr.row-year td:first-child { border-radius: 8px 0 0 8px; }
+        table.summary tr.row-year td:last-child { border-radius: 0 8px 8px 0; }
+        .summary-total-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; padding: 12px 14px; border-radius: 12px; font-weight: 700; background: linear-gradient(135deg, rgba(16,185,129,.10), rgba(0,181,226,.08)); border: 1px solid rgba(16,185,129,.25); }
+        .summary-total-row small { display: block; font-size: .7rem; font-weight: 500; color: var(--text-muted); }
+        .summary-total { font-size: 1.15rem; color: var(--success-dark); font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .muted { color: var(--text-muted); }
+        .cap { display: block; font-size: .64rem; font-weight: 600; color: var(--text-muted); }
+        .retro-num { color: var(--diamond-dark); font-weight: 700; }
+        .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .7rem; font-weight: 700; }
+        .pill.no { background: #fee2e2; color: #b91c1c; }
+        .pill.warn { background: #fef3c7; color: var(--warning-dark); }
+        .summary-note { margin-top: 10px; font-size: .72rem; color: var(--text-muted); line-height: 1.5; }
+
+        .app-footer { max-width: var(--content-width); margin: 8px auto 0; padding: 0 16px; text-align: center; font-size: .74rem; color: var(--text-muted); }
+
+        /* ---------- Modal / Toast ---------- */
+        .modal-overlay { display: none; position: fixed; inset: 0; z-index: 2000; padding: 16px; justify-content: center; align-items: center; background: rgba(24,10,40,.45); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+        .modal-box { width: 100%; max-width: 400px; padding: 22px; border-radius: 20px; background: white; box-shadow: 0 30px 60px -20px rgba(24,10,40,.55), 0 0 0 1px rgba(84,32,120,.06); animation: pop 0.2s ease-out; }
+        @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
+        .modal-title { font-size: 1.2rem; font-weight: 700; color: var(--primary); margin-bottom: 6px; }
+        .modal-desc { font-size: 0.85rem; color: var(--text-light); margin-bottom: 12px; }
+        .modal-current, .modal-preview { font-size: .85rem; color: var(--text-light); font-variant-numeric: tabular-nums; }
+        .modal-current { margin-bottom: 8px; }
+        .modal-preview { margin-top: 8px; min-height: 1.3em; }
+        .modal-current b, .modal-preview b { color: var(--text-main); }
+        #calc-input { font-size: 1.25rem; font-weight: 700; text-align: center; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+        .modal-btn { padding: 9px 18px; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; }
+        .modal-btn.cancel { background: #eeeaf4; color: #4b4560; }
+        .modal-btn.confirm { color: white; background: linear-gradient(135deg, var(--primary-light), var(--primary)); box-shadow: 0 6px 14px -6px rgba(84,32,120,.6); }
+
+        .toast { position: fixed; bottom: max(24px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); z-index: 1000; display: none; max-width: calc(100% - 32px); padding: 10px 20px; border-radius: 999px; font-size: 0.9rem; color: white; text-align: center; box-shadow: 0 10px 24px -8px rgba(0,0,0,.4); }
+
+        @media (max-width: 400px) {
+            .tab-content { padding-left: 12px; padding-right: 12px; }
+            .grid-container { gap: 10px; }
+            .product-body { padding: 12px 10px; }
+            .results-card { padding-left: 14px; padding-right: 14px; }
+            .input-actual-incentive { width: 130px !important; }
+        }
+        /* จอมือถือ: ซ่อนคอลัมน์ Payout ในตารางสรุป (ดูได้ในแต่ละแท็บ) เพื่อให้ตารางพอดีจอ */
+        @media (max-width: 560px) {
+            .summary-card { padding: 16px 12px 12px; }
+            table.summary { font-size: .74rem; }
+            table.summary th, table.summary td { padding-left: 4px; padding-right: 4px; }
+            table.summary .col-payout { display: none; }
+            .pill { padding: 2px 6px; font-size: .62rem; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation: none !important; transition: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -119,68 +355,70 @@
 
     <div id="app-wrapper">
         <header>
-            <div class="header-title">Incentive Calc</div>
-            <div class="header-actions">
-                <button class="header-btn backup" onclick="openBackup()">จัดการข้อมูล</button>
-                <button class="header-btn" onclick="saveData(true)">Save</button>
+            <div class="header-inner">
+                <div class="brand">
+                    <div class="brand-icon">฿</div>
+                    <div class="brand-text">
+                        <div class="header-title">Incentive Calc</div>
+                        <div class="save-status" id="save-status"><span class="save-dot"></span><span id="save-text">บันทึกอัตโนมัติ</span></div>
+                    </div>
+                </div>
+                <div class="year-picker">
+                    <label for="global-year">Year</label>
+                    <select id="global-year"></select>
+                </div>
             </div>
         </header>
 
-        <div class="year-container">
-            <label>Year:</label>
-            <select id="global-year" onchange="changeYear()">
-                <option value="2026">2026</option>
-                <option value="2027">2027</option>
-                <option value="2028">2028</option>
-                <option value="2029">2029</option>
-                <option value="2030">2030</option>
-                <option value="2031">2031</option>
-            </select>
-        </div>
-
-        <div class="tabs" id="tabs-container"></div>
-        <div id="content-container"></div>
-        <div class="toast" id="toast">บันทึกข้อมูลเรียบร้อย!</div>
+        <nav class="tabs-bar"><div class="tabs" id="tabs-container" role="tablist"></div></nav>
+        <main id="content-container"></main>
+        <div class="app-footer">ข้อมูลบันทึกอัตโนมัติทุกครั้งที่แก้ไข เก็บไว้ในเบราว์เซอร์ของเครื่องนี้ และแยกตามปี</div>
+        <div class="toast" id="toast"></div>
     </div>
 
     <div id="calc-modal" class="modal-overlay">
-        <div class="modal-box">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="calc-modal-title">
             <div class="modal-title" id="calc-modal-title">ปรับยอดขาย</div>
-            <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 10px;">ระบบจะนำตัวเลขนี้ไปบวก/ลบ กับยอดเดิมให้อัตโนมัติ</p>
-            <input type="text" id="calc-input" class="num-input" placeholder="ใส่ตัวเลข..." inputmode="numeric" style="font-size: 1.2rem; font-weight: bold; text-align: center;">
+            <p class="modal-desc">ระบบจะนำตัวเลขนี้ไปบวก/ลบ กับยอดเดิมให้อัตโนมัติ</p>
+            <div class="modal-current">ยอดปัจจุบัน: <b id="calc-current">0</b> THB</div>
+            <input type="text" id="calc-input" class="num-input" placeholder="ใส่ตัวเลข..." inputmode="decimal" autocomplete="off">
+            <div class="modal-preview" id="calc-preview"></div>
             <div class="modal-actions">
-                <button class="modal-btn cancel" onclick="closeCalc()">ยกเลิก</button>
-                <button class="modal-btn confirm" onclick="applyCalc()">ตกลง</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="backup-modal" class="modal-overlay">
-        <div class="modal-box">
-            <div class="modal-title">Backup / Restore ข้อมูล</div>
-            <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 10px;">หากแอปไม่จำค่า ให้คัดลอกโค้ดด้านล่างเก็บไว้ใน Note และนำมาวางใหม่เพื่อกู้ข้อมูลคืน</p>
-            <textarea id="backup-textarea" rows="6" style="width: 100%; border-radius: 8px; padding: 10px; font-family: monospace; border: 1px solid var(--border-color);"></textarea>
-            <div class="modal-actions">
-                <button class="modal-btn cancel" onclick="closeBackup()">ปิด</button>
-                <button class="modal-btn confirm" onclick="restoreBackup()">นำเข้าข้อมูล</button>
+                <button type="button" class="modal-btn cancel" onclick="closeCalc()">ยกเลิก</button>
+                <button type="button" class="modal-btn confirm" onclick="applyCalc()">ตกลง</button>
             </div>
         </div>
     </div>
 
     <script>
+        const INCENTIVE_BASE = 120000;
+        const STORAGE_KEY = 'incentiveDataMaster';   // key เดิม เพื่อให้ข้อมูลที่เคยบันทึกไว้ยังใช้ได้
+        const UI_KEY = 'incentiveUIState';           // จำปี/แท็บล่าสุด และเวลาบันทึกล่าสุด
+        const FIELDS = ['targetM', 'targetT', 'weightM', 'actualM', 'actualT', 'actualIncentive'];
+        const METER_MAX = 140;
+        const METER_MARKS = { quarter: [80, 100, 130], half: [100, 130], year: [100, 120], avg: [80] };
+
         const periods = [
-            { id: 'q1', label: 'Quarter 1', isHalf: false },
-            { id: 'q2', label: 'Quarter 2', isHalf: false },
-            { id: 'h1', label: 'Half 1', isHalf: true, source: ['q1', 'q2'] },
-            { id: 'q3', label: 'Quarter 3', isHalf: false },
-            { id: 'q4', label: 'Quarter 4', isHalf: false },
-            { id: 'h2', label: 'Half 2', isHalf: true, source: ['q3', 'q4'] }
+            { id: 'q1', label: 'Quarter 1', short: 'Q1', type: 'quarter' },
+            { id: 'q2', label: 'Quarter 2', short: 'Q2', type: 'quarter' },
+            { id: 'h1', label: 'Half 1', short: 'H1', type: 'half', source: ['q1', 'q2'], multiplier: 2, maxRange: 130, sub: 'รวม Quarter 1 + Quarter 2' },
+            { id: 'q3', label: 'Quarter 3', short: 'Q3', type: 'quarter' },
+            { id: 'q4', label: 'Quarter 4', short: 'Q4', type: 'quarter' },
+            { id: 'h2', label: 'Half 2', short: 'H2', type: 'half', source: ['q3', 'q4'], multiplier: 2, maxRange: 130, sub: 'รวม Quarter 3 + Quarter 4' },
+            { id: 'y', label: 'Yearly', short: 'Yearly', type: 'year', source: ['q1', 'q2', 'q3', 'q4'], halves: ['h1', 'h2'], multiplier: 4, maxRange: 120, sub: 'รวม Half 1 + Half 2 (Quarter 1–4)' }
         ];
+        const isAgg = p => p.type !== 'quarter';
+        const byId = id => document.getElementById(id);
+        const periodById = id => periods.find(p => p.id === id);
 
         let fireworksTimer = null;
         let isFireworksActive = false;
+        let fireworksRunning = false;
         let activeCalcTarget = '';
         let activeCalcMode = '';
+        let storageOK = true;
+        let uiState = { year: null, tab: 'q1', savedAt: {} };
+        let lastRealRanges = {};
 
         function formatWithCommas(n) {
             let parts = n.toString().split('.');
@@ -193,185 +431,289 @@
             return parseFloat(str.toString().replace(/,/g, '')) || 0;
         }
 
-        function getVal(id) { return getRawNum(document.getElementById(id)?.value); }
+        function getVal(id) { return getRawNum(byId(id)?.value); }
 
         function setVal(id, val, comma = true) {
-            const el = document.getElementById(id);
+            const el = byId(id);
             if (!el) return;
             if (comma) {
                 let v = parseFloat(val) || 0;
                 let parts = v.toFixed(2).split('.');
-                parts[0] = parseInt(parts[0]).toLocaleString();
+                parts[0] = formatWithCommas(parts[0]);
                 el.value = parts[0] + (parts[1] !== "00" ? "." + parts[1] : "");
             } else {
                 el.value = val;
             }
         }
 
-        function initApp() {
-            const tabsContainer = document.getElementById('tabs-container');
-            const contentContainer = document.getElementById('content-container');
+        function money(v) { return formatWithCommas(v.toFixed(2)) + " THB"; }
+        function moneyShort(v) {
+            const s = formatWithCommas(v.toFixed(2));
+            return s.endsWith('.00') ? s.slice(0, -3) : s;
+        }
 
-            periods.forEach((p, index) => {
-                const tab = document.createElement('div');
-                tab.className = `tab ${index === 0 ? 'active' : ''}`;
-                tab.innerText = p.label;
-                tab.onclick = () => switchTab(p.id);
-                tab.id = `tab-btn-${p.id}`;
-                tabsContainer.appendChild(tab);
-
-                const content = document.createElement('div');
-                content.className = `tab-content ${index === 0 ? 'active' : ''}`;
-                content.id = `content-${p.id}`;
-                
-                const isReadonlyText = p.isHalf ? 'readonly disabled' : '';
-                
-                const calcUI_M = p.isHalf ? `<label>Actual Sale</label>` : `
-                    <div class="actual-sale-header">
-                        <label>Actual Sale</label>
-                        <div class="calc-mini-btns">
-                            <button class="mini-btn add" onclick="openCalc('${p.id}-actualM', 'add')">+ เพิ่ม</button>
-                            <button class="mini-btn sub" onclick="openCalc('${p.id}-actualM', 'sub')">- ลด</button>
-                        </div>
-                    </div>`;
-                const calcUI_T = p.isHalf ? `<label>Actual Sale</label>` : `
-                    <div class="actual-sale-header">
-                        <label>Actual Sale</label>
-                        <div class="calc-mini-btns">
-                            <button class="mini-btn add" onclick="openCalc('${p.id}-actualT', 'add')">+ เพิ่ม</button>
-                            <button class="mini-btn sub" onclick="openCalc('${p.id}-actualT', 'sub')">- ลด</button>
-                        </div>
-                    </div>`;
-
-                let resultRowsHTML = `
-                    <div class="result-row" style="background: #f1f5f9; padding: 10px; border-radius: 6px; margin-bottom: 5px;">
-                        <div class="result-label" style="color: var(--text-light); font-size: 0.95rem;">Total Target</div>
-                        <div class="result-value" id="${p.id}-totalTarget" style="color: var(--text-main); font-size: 1rem;">0 THB</div>
+        // ---------- สร้างหน้าจอ ----------
+        function meterHTML(id, type) {
+            const pos = m => (m / METER_MAX * 100).toFixed(3) + '%';
+            const marks = METER_MARKS[type];
+            return `
+                <div class="meter" id="${id}">
+                    <div class="meter-track">
+                        <div class="meter-fill" id="${id}-fill"></div>
+                        ${marks.map(m => `<i class="meter-mark" style="left:${pos(m)}"></i>`).join('')}
                     </div>
-                    <div class="result-row" style="background: #f1f5f9; padding: 10px; border-radius: 6px; margin-bottom: 10px;">
-                        <div class="result-label" style="color: var(--text-light); font-size: 0.95rem;">Total Actual</div>
-                        <div class="result-value" id="${p.id}-totalActual" style="color: var(--text-main); font-size: 1rem;">0 THB</div>
+                    <div class="meter-scale">
+                        <span style="left:0">0%</span>
+                        ${marks.map(m => `<span style="left:${pos(m)}">${m}%${type === 'year' && m === 120 ? ' MAX' : ''}</span>`).join('')}
                     </div>
-                    <div class="result-row">
-                        <div class="result-label">RANGE</div>
+                    <div class="meter-status" id="${id}-status"></div>
+                </div>`;
+        }
+
+        function productCardHTML(p, prod) {
+            const agg = isAgg(p);
+            const isM = prod === 'M';
+            const ro = agg ? 'readonly disabled' : 'data-field';
+            const saleHeader = agg ? `<label>Actual Sale</label>` : `
+                <div class="actual-sale-header">
+                    <label for="${p.id}-actual${prod}">Actual Sale</label>
+                    <div class="calc-mini-btns">
+                        <button type="button" class="mini-btn add" onclick="openCalc('${p.id}-actual${prod}', 'add')">+ เพิ่ม</button>
+                        <button type="button" class="mini-btn sub" onclick="openCalc('${p.id}-actual${prod}', 'sub')">- ลด</button>
+                    </div>
+                </div>`;
+            const weightInput = isM
+                ? `<input type="number" id="${p.id}-weightM" value="70" inputmode="decimal" data-field>`
+                : `<input type="number" id="${p.id}-weightT" value="30" readonly tabindex="-1">`;
+            return `
+                <div class="product-card">
+                    <div class="product-title ${isM ? 'mounjaro-title' : 'trulicity-title'}">${isM ? 'Mounjaro' : 'Trulicity'}</div>
+                    <div class="product-body">
+                        <div class="input-group"><label>Target</label><input type="text" inputmode="decimal" id="${p.id}-target${prod}" class="num-input" autocomplete="off" ${ro}></div>
+                        <div class="input-group"><label>Weight %</label><div class="input-wrapper">${weightInput}<span>%</span></div></div>
+                        <div class="input-group">
+                            ${saleHeader}
+                            <input type="text" inputmode="decimal" id="${p.id}-actual${prod}" class="num-input" autocomplete="off" ${ro}>
+                        </div>
+                        <div class="input-group"><label>Actual %</label><div class="input-wrapper"><input type="text" id="${p.id}-actualPct${prod}" readonly tabindex="-1"><span>%</span></div></div>
+                    </div>
+                </div>`;
+        }
+
+        function resultsHTML(p) {
+            const rangeHint = p.type === 'year' ? '<small>คิด Payout สูงสุดที่ 120%</small>' : p.type === 'half' ? '<small>คิด Payout สูงสุดที่ 130%</small>' : '';
+            let html = `
+                <div class="stat-grid">
+                    <div class="stat-tile"><div class="stat-label">Total Target</div><div class="stat-value" id="${p.id}-totalTarget">0 THB</div></div>
+                    <div class="stat-tile"><div class="stat-label">Total Actual</div><div class="stat-value" id="${p.id}-totalActual">0 THB</div></div>
+                </div>
+                <div class="range-block">
+                    <div class="result-row flat">
+                        <div class="result-label">RANGE${rangeHint}</div>
                         <div class="result-value" id="${p.id}-range">0.00%</div>
                     </div>
-                    <div class="result-row">
-                        <div class="result-label">Payout %</div>
-                        <div class="result-value" id="${p.id}-payoutPct">0%</div>
-                    </div>
-                    <div class="result-row">
-                        <div class="result-label">Incentive</div>
-                        <div class="result-value incentive" id="${p.id}-incentive">0 THB</div>
-                    </div>
-                `;
+                    ${meterHTML(`${p.id}-meter`, p.type)}
+                </div>
+                <div class="result-row">
+                    <div class="result-label">Payout %</div>
+                    <div class="result-value" id="${p.id}-payoutPct">0%</div>
+                </div>
+                <div class="result-row">
+                    <div class="result-label">Incentive<small>Payout % × 120,000</small></div>
+                    <div class="result-value incentive" id="${p.id}-incentive">0 THB</div>
+                </div>`;
 
-                if (!p.isHalf) {
-                    resultRowsHTML += `
-                        <div class="result-row">
-                            <div class="result-label">Actual Incentive</div>
-                            <input type="text" inputmode="numeric" id="${p.id}-actualIncentive" class="input-actual-incentive num-input" placeholder="0">
-                        </div>
-                    `;
-                } else {
-                    resultRowsHTML += `
-                        <div class="result-row">
-                            <div class="result-label">IncentiveX2</div>
-                            <div class="result-value" id="${p.id}-incentiveX2">0 THB</div>
-                        </div>
-                        <div class="result-row">
-                            <div class="result-label">Actual Incentive</div>
-                            <div class="result-value" id="${p.id}-actualIncentiveHalf">0 THB</div>
-                        </div>
-                        <div class="result-row">
+            if (p.type === 'quarter') {
+                html += `
+                    <div class="result-row">
+                        <div class="result-label">Actual Incentive<small>ยอดที่ได้รับจริง</small></div>
+                        <input type="text" inputmode="decimal" id="${p.id}-actualIncentive" class="input-actual-incentive num-input" placeholder="0" autocomplete="off" data-field>
+                    </div>`;
+            } else if (p.type === 'half') {
+                html += `
+                    <div class="result-row">
+                        <div class="result-label">IncentiveX2</div>
+                        <div class="result-value" id="${p.id}-incentiveX2">0 THB</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="result-label">Actual Incentive<small>${periodById(p.source[0]).label} + ${periodById(p.source[1]).label}</small></div>
+                        <div class="result-value" id="${p.id}-actualIncentiveHalf">0 THB</div>
+                    </div>
+                    <div class="retro-box" id="${p.id}-retro-box">
+                        <div class="result-row flat">
                             <div class="result-label">Retro</div>
                             <div class="result-value retro" id="${p.id}-retro">0 THB</div>
                         </div>
-                    `;
+                        <div class="retro-formula" id="${p.id}-retro-formula"></div>
+                    </div>`;
+            } else {
+                html += `
+                    <div class="result-row">
+                        <div class="result-label">IncentiveX4</div>
+                        <div class="result-value" id="${p.id}-incentiveX4">0 THB</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="result-label">Actual Incentive<small id="${p.id}-actualBreakdown">Half 1 + Half 2</small></div>
+                        <div class="result-value" id="${p.id}-actualIncentiveYear">0 THB</div>
+                    </div>
+                    <div class="range-block">
+                        <div class="result-row flat">
+                            <div class="result-label">Average RANGE Q1–Q4<small>เงื่อนไขได้ Retro: ต้อง ≥ 80%</small></div>
+                            <div class="result-value" id="${p.id}-avgRange">0.00%</div>
+                        </div>
+                        ${meterHTML(`${p.id}-avg-meter`, 'avg')}
+                        <div class="chips" id="${p.id}-avg-chips"></div>
+                    </div>
+                    <div class="retro-box" id="${p.id}-retro-box">
+                        <div class="result-row flat">
+                            <div class="result-label">Retro</div>
+                            <div class="result-value retro" id="${p.id}-retro">0 THB</div>
+                        </div>
+                        <div class="retro-formula" id="${p.id}-retro-formula"></div>
+                    </div>`;
+            }
+            return html;
+        }
+
+        function simHTML(p) {
+            return `
+                <div class="sim-card" id="${p.id}-sim-card">
+                    <div class="sim-title">Calculation to achieve target range %</div>
+                    <div class="sim-row">
+                        <div class="sim-row-header"><span>Target Range %</span><span class="val" id="${p.id}-sim-target-val">100.0%</span></div>
+                        <div class="sim-target-range-input">
+                            <input type="range" id="${p.id}-sim-target" min="0" max="130" step="0.1" value="100">
+                            <input type="number" id="${p.id}-sim-target-num" min="0" max="130" step="0.1" value="100" inputmode="decimal">
+                        </div>
+                    </div>
+                    <div class="sim-row">
+                        <div class="sim-row-header"><span>Mounjaro Target Actual %</span><span class="val" id="${p.id}-sim-m-val">100.0%</span></div>
+                        <input type="range" id="${p.id}-sim-m" min="0" max="250" step="0.1" value="100">
+                        <div class="remain-sale" id="${p.id}-sim-m-remain">Remain Sale: <span>0 THB</span></div>
+                    </div>
+                    <div class="sim-row">
+                        <div class="sim-row-header"><span>Trulicity Target Actual %</span><span class="val" id="${p.id}-sim-t-val">100.0%</span></div>
+                        <input type="range" id="${p.id}-sim-t" min="0" max="250" step="0.1" value="100" disabled>
+                        <div class="remain-sale" id="${p.id}-sim-t-remain">Remain Sale: <span>0 THB</span></div>
+                    </div>
+                </div>`;
+        }
+
+        function summaryHTML() {
+            return `
+                <div class="summary-card">
+                    <div class="summary-title">สรุปภาพรวมทั้งปี<small>แตะที่แถวเพื่อไปยังแท็บนั้น</small></div>
+                    <div class="table-scroll">
+                        <table class="summary">
+                            <thead><tr><th>ช่วง</th><th>RANGE</th><th class="col-payout">Payout</th><th>Incentive</th><th>Actual</th><th>Retro</th></tr></thead>
+                            <tbody id="summary-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="summary-total-row">
+                        <div>รวมทั้งปี<small>Actual Incentive Q1–Q4 + Retro ทุกช่วงที่ได้</small></div>
+                        <div class="summary-total" id="summary-total">0</div>
+                    </div>
+                    <div class="summary-note">* ตัวเลขหน่วย THB · Incentive ของ Half = IncentiveX2, Yearly = IncentiveX4 · Actual = Actual Incentive · "Q &lt;80%" = มี Quarter ไม่ถึง 80%, "Avg &lt;80%" = Average RANGE Q1–Q4 ไม่ถึง 80%</div>
+                </div>`;
+        }
+
+        function initApp() {
+            storageOK = checkStorage();
+            loadUIState();
+            buildYearOptions();
+
+            const tabsContainer = byId('tabs-container');
+            const contentContainer = byId('content-container');
+
+            periods.forEach((p, index) => {
+                const tab = document.createElement('button');
+                tab.type = 'button';
+                tab.className = `tab ${p.type}`;
+                tab.id = `tab-btn-${p.id}`;
+                tab.setAttribute('role', 'tab');
+                tab.setAttribute('aria-controls', `content-${p.id}`);
+                tab.innerText = p.label;
+                tab.onclick = () => switchTab(p.id);
+                tabsContainer.appendChild(tab);
+                if (p.type === 'half') {
+                    const sep = document.createElement('span');
+                    sep.className = 'tab-sep';
+                    sep.setAttribute('aria-hidden', 'true');
+                    tabsContainer.appendChild(sep);
                 }
 
-                const simHTML = p.isHalf ? '' : `
-                    <div class="sim-card" id="${p.id}-sim-card">
-                        <div class="sim-title">Calculation to achieve target range %</div>
-                        <div class="sim-row">
-                            <div class="sim-row-header"><span>Target Range %</span><span class="val" id="${p.id}-sim-target-val">100.0%</span></div>
-                            <div class="sim-target-range-input">
-                                <input type="range" id="${p.id}-sim-target" min="0" max="130" step="0.1" value="100">
-                                <input type="number" id="${p.id}-sim-target-num" min="0" max="130" step="0.1" value="100">
-                            </div>
-                        </div>
-                        <div class="sim-row">
-                            <div class="sim-row-header"><span>Mounjaro Target Actual %</span><span class="val" id="${p.id}-sim-m-val">100.0%</span></div>
-                            <input type="range" id="${p.id}-sim-m" min="0" max="250" step="0.1" value="100">
-                            <div class="remain-sale" id="${p.id}-sim-m-remain">Remain Sale: <span>0 THB</span></div>
-                        </div>
-                        <div class="sim-row">
-                            <div class="sim-row-header"><span>Trulicity Target Actual %</span><span class="val" id="${p.id}-sim-t-val">100.0%</span></div>
-                            <input type="range" id="${p.id}-sim-t" min="0" max="250" step="0.1" value="100" disabled>
-                            <div class="remain-sale" id="${p.id}-sim-t-remain">Remain Sale: <span>0 THB</span></div>
-                        </div>
-                    </div>
-                `;
-
+                const content = document.createElement('section');
+                content.className = 'tab-content';
+                content.id = `content-${p.id}`;
+                content.setAttribute('role', 'tabpanel');
                 content.innerHTML = `
-                    <div class="section-title">${p.label}</div>
-                    <div id="${p.id}-diamond-msg" class="diamond-msg" style="visibility:hidden;">คุณสุดยอดมาก Mission to Diamond 💎</div>
-                    <div class="grid-container">
-                        <div class="product-card">
-                            <div class="product-title mounjaro-title">Mounjaro</div>
-                            <div class="input-group"><label>Target</label><input type="text" id="${p.id}-targetM" class="num-input calc-trigger" ${isReadonlyText}></div>
-                            <div class="input-group"><label>Weight %</label><div class="input-wrapper"><input type="number" id="${p.id}-weightM" value="70" class="calc-trigger"><span>%</span></div></div>
-                            <div class="input-group">
-                                ${calcUI_M}
-                                <input type="text" id="${p.id}-actualM" class="num-input calc-trigger" ${isReadonlyText}>
-                            </div>
-                            <div class="input-group"><label>Actual %</label><div class="input-wrapper"><input type="text" id="${p.id}-actualPctM" readonly><span>%</span></div></div>
-                        </div>
-                        <div class="product-card">
-                            <div class="product-title trulicity-title">Trulicity</div>
-                            <div class="input-group"><label>Target</label><input type="text" id="${p.id}-targetT" class="num-input calc-trigger" ${isReadonlyText}></div>
-                            <div class="input-group"><label>Weight %</label><div class="input-wrapper"><input type="number" id="${p.id}-weightT" value="30" readonly><span>%</span></div></div>
-                            <div class="input-group">
-                                ${calcUI_T}
-                                <input type="text" id="${p.id}-actualT" class="num-input calc-trigger" ${isReadonlyText}>
-                            </div>
-                            <div class="input-group"><label>Actual %</label><div class="input-wrapper"><input type="text" id="${p.id}-actualPctT" readonly><span>%</span></div></div>
-                        </div>
+                    <div class="section-head">
+                        <div class="section-title">${p.label}</div>
+                        <div class="section-sub">${p.sub || 'กรอก Target และ Actual Sale ของไตรมาส'}</div>
                     </div>
-                    <div class="results-card">${resultRowsHTML}</div>
-                    ${simHTML}
+                    <div class="diamond-wrap" id="${p.id}-diamond-wrap"><div id="${p.id}-diamond-msg" class="diamond-msg">คุณสุดยอดมาก Mission to Diamond 💎</div></div>
+                    <div class="grid-container">
+                        ${productCardHTML(p, 'M')}
+                        ${productCardHTML(p, 'T')}
+                    </div>
+                    <div class="results-card">${resultsHTML(p)}</div>
+                    ${p.type === 'quarter' ? simHTML(p) : ''}
+                    ${p.type === 'year' ? summaryHTML() : ''}
                 `;
                 contentContainer.appendChild(content);
 
-                if (!p.isHalf) {
-                    const sRange = document.getElementById(`${p.id}-sim-target`);
-                    const sNum = document.getElementById(`${p.id}-sim-target-num`);
-                    const sM = document.getElementById(`${p.id}-sim-m`);
+                if (p.type === 'quarter') {
+                    const sRange = byId(`${p.id}-sim-target`);
+                    const sNum = byId(`${p.id}-sim-target-num`);
+                    const sM = byId(`${p.id}-sim-m`);
                     sRange.oninput = (e) => { sNum.value = e.target.value; runSimulator(p.id); };
                     sNum.oninput = (e) => { sRange.value = e.target.value; runSimulator(p.id); };
                     sM.oninput = () => runSimulator(p.id);
                 }
             });
 
-            document.querySelectorAll('.num-input').forEach(el => {
-                el.addEventListener('input', (e) => {
-                    let cursor = e.target.selectionStart;
-                    let oldLen = e.target.value.length;
-                    let raw = e.target.value.replace(/,/g, '');
-                    if (!isNaN(raw) || raw === "") {
-                        e.target.value = raw === "" ? "" : formatWithCommas(raw);
-                        let newLen = e.target.value.length;
-                        e.target.setSelectionRange(cursor + (newLen - oldLen), cursor + (newLen - oldLen));
-                    }
-                    if(e.target.id !== 'calc-input') calculateAll();
-                });
+            // จัดรูปแบบตัวเลข (ใส่ comma) + คำนวณใหม่ + บันทึกอัตโนมัติ ทุกครั้งที่ผู้ใช้แก้ไขข้อมูล
+            contentContainer.addEventListener('input', (e) => {
+                const el = e.target;
+                if (el.classList.contains('num-input')) formatNumInput(el);
+                if (el.hasAttribute('data-field')) {
+                    calculateAll();
+                    saveData();
+                }
             });
 
-            document.querySelectorAll('.calc-trigger, #global-year').forEach(el => el.addEventListener('input', calculateAll));
+            const calcInput = byId('calc-input');
+            calcInput.addEventListener('input', (e) => { formatNumInput(e.target); updateCalcPreview(); });
+            calcInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); applyCalc(); } });
+            byId('calc-modal').addEventListener('click', (e) => { if (e.target.id === 'calc-modal') closeCalc(); });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCalc(); });
+
+            byId('summary-body').addEventListener('click', (e) => {
+                const row = e.target.closest('tr[data-tab]');
+                if (row) switchTab(row.dataset.tab);
+            });
+
+            // เปลี่ยนปีใช้ 'change' เท่านั้น (เดิมมี 'input' ที่ทำให้ข้อมูลปีเก่าถูกเซฟทับปีใหม่)
+            byId('global-year').addEventListener('change', changeYear);
+
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
 
             loadData();
             calculateAll();
-            requestAnimationFrame(animateFireworks);
+            switchTab(periodById(uiState.tab) ? uiState.tab : 'q1', { fromUser: false });
+            refreshSaveStatus();
+        }
+
+        function formatNumInput(el) {
+            let cursor = el.selectionStart;
+            let oldLen = el.value.length;
+            let raw = el.value.replace(/,/g, '');
+            if (!isNaN(raw) || raw === "") {
+                el.value = raw === "" ? "" : formatWithCommas(raw);
+                let newLen = el.value.length;
+                el.setSelectionRange(cursor + (newLen - oldLen), cursor + (newLen - oldLen));
+            }
         }
 
         // --- ระบบเครื่องคิดเลขย่อย ---
@@ -379,33 +721,44 @@
             activeCalcTarget = targetId;
             activeCalcMode = mode;
             let productLabel = targetId.includes('actualM') ? 'Mounjaro' : 'Trulicity';
-            document.getElementById('calc-modal-title').innerText = mode === 'add' ? `บวกยอดเพิ่ม (${productLabel})` : `ลบยอดออก (${productLabel})`;
-            document.getElementById('calc-input').value = '';
-            document.getElementById('calc-modal').style.display = 'flex';
-            setTimeout(() => document.getElementById('calc-input').focus(), 100);
+            byId('calc-modal-title').innerText = mode === 'add' ? `บวกยอดเพิ่ม (${productLabel})` : `ลบยอดออก (${productLabel})`;
+            byId('calc-current').innerText = moneyShort(getVal(targetId));
+            byId('calc-input').value = '';
+            updateCalcPreview();
+            byId('calc-modal').style.display = 'flex';
+            setTimeout(() => byId('calc-input').focus(), 100);
         }
-        function closeCalc() { document.getElementById('calc-modal').style.display = 'none'; }
+        function closeCalc() { byId('calc-modal').style.display = 'none'; }
+        function calcNewValue() {
+            let inputVal = getRawNum(byId('calc-input').value);
+            let currentVal = getVal(activeCalcTarget);
+            let newVal = activeCalcMode === 'add' ? (currentVal + inputVal) : (currentVal - inputVal);
+            if (newVal < 0) newVal = 0;
+            return { inputVal, newVal };
+        }
+        function updateCalcPreview() {
+            const { inputVal, newVal } = calcNewValue();
+            byId('calc-preview').innerHTML = inputVal > 0 ? `ยอดใหม่: <b>${moneyShort(newVal)}</b> THB` : '';
+        }
         function applyCalc() {
-            let inputVal = getRawNum(document.getElementById('calc-input').value);
+            const { inputVal, newVal } = calcNewValue();
             if (inputVal > 0) {
-                let currentVal = getVal(activeCalcTarget);
-                let newVal = activeCalcMode === 'add' ? (currentVal + inputVal) : (currentVal - inputVal);
-                if (newVal < 0) newVal = 0;
                 setVal(activeCalcTarget, newVal, true);
-                calculateAll(); // การคำนวณจะบันทึกอัตโนมัติ
+                calculateAll();
+                saveData();
             }
             closeCalc();
         }
 
         // --- ระบบ Calculation Simulator ---
         function runSimulator(pId) {
-            let tRange = parseFloat(document.getElementById(`${pId}-sim-target`).value);
-            let mSimSlider = document.getElementById(`${pId}-sim-m`);
-            let tSimSlider = document.getElementById(`${pId}-sim-t`);
-            
+            let tRange = parseFloat(byId(`${pId}-sim-target`).value);
+            let mSimSlider = byId(`${pId}-sim-m`);
+            let tSimSlider = byId(`${pId}-sim-t`);
+
             // ดึงค่า Actual ปัจจุบันเพื่อทำเป็นจุดเริ่มต้น (Min)
-            let actPctM = getRawNum(document.getElementById(`${pId}-actualPctM`).value);
-            let actPctT = getRawNum(document.getElementById(`${pId}-actualPctT`).value);
+            let actPctM = getRawNum(byId(`${pId}-actualPctM`).value);
+            let actPctT = getRawNum(byId(`${pId}-actualPctT`).value);
 
             let wM = getVal(`${pId}-weightM`) / 100;
             let wT = (100 - getVal(`${pId}-weightM`)) / 100;
@@ -434,9 +787,9 @@
             tSimSlider.max = maxT.toFixed(1);
             tSimSlider.value = tSimPct.toFixed(1);
 
-            document.getElementById(`${pId}-sim-target-val`).innerText = tRange.toFixed(1) + '%';
-            document.getElementById(`${pId}-sim-m-val`).innerText = mSimPct.toFixed(1) + '%';
-            document.getElementById(`${pId}-sim-t-val`).innerText = tSimPct.toFixed(1) + '%';
+            byId(`${pId}-sim-target-val`).innerText = tRange.toFixed(1) + '%';
+            byId(`${pId}-sim-m-val`).innerText = mSimPct.toFixed(1) + '%';
+            byId(`${pId}-sim-t-val`).innerText = tSimPct.toFixed(1) + '%';
 
             let targetM = getVal(`${pId}-targetM`);
             let targetT = getVal(`${pId}-targetT`);
@@ -448,17 +801,65 @@
             document.querySelector(`#${pId}-sim-t-remain span`).innerText = formatWithCommas(Math.max(0, remainT).toFixed(2)) + " THB";
         }
 
+        // --- แถบ Progress RANGE ---
+        function rangeStatus(type, v) {
+            const gap = t => (t - v).toFixed(2);
+            if (type === 'avg') {
+                return v >= 80 ? ['success', '✓ ผ่านเงื่อนไข Retro Yearly (≥ 80%)']
+                               : ['danger', `✕ ไม่ถึง 80% — ยังไม่ได้ Retro Yearly · ขาดอีก ${gap(80)}%`];
+            }
+            if (type === 'year') {
+                if (v >= 120) return ['diamond', '★ เต็ม MAX 120% · ได้ Payout สูงสุด 145%'];
+                if (v >= 100) return ['success', `✓ ได้ Payout · อีก ${gap(120)}% ถึง MAX 120%`];
+                return ['warning', `▲ ยังไม่ถึง 100% (Payout 0%) · ขาดอีก ${gap(100)}%`];
+            }
+            if (v >= 130) return ['diamond', '💎 Mission to Diamond · Payout สูงสุด 175%'];
+            if (v >= 100) return ['success', `✓ ได้ Payout · อีก ${gap(130)}% ถึง 130%`];
+            if (type === 'quarter' && v < 80) return ['danger', `✕ ต่ำกว่า 80% (ไม่ผ่านเงื่อนไข Retro) · ขาดอีก ${gap(80)}%`];
+            return ['warning', `▲ ยังไม่ถึง 100% (Payout 0%) · ขาดอีก ${gap(100)}%`];
+        }
+
+        function updateMeter(id, type, v) {
+            const [lv, text] = rangeStatus(type, v);
+            const fill = byId(`${id}-fill`);
+            const status = byId(`${id}-status`);
+            fill.style.width = (Math.max(0, Math.min(v, METER_MAX)) / METER_MAX * 100) + '%';
+            fill.className = `meter-fill lv-${lv}`;
+            status.className = `meter-status lv-${lv}`;
+            status.innerText = text;
+        }
+
+        function renderRetro(pid, eligible, retro, ineligibleText, conditionText, formulaText) {
+            const el = byId(`${pid}-retro`);
+            const formula = byId(`${pid}-retro-formula`);
+            const box = byId(`${pid}-retro-box`);
+            if (!eligible) {
+                el.className = "result-value danger";
+                el.innerText = ineligibleText;
+                formula.innerText = conditionText;
+            } else if (retro < 0) {
+                el.className = "result-value danger";
+                el.innerText = "ได้มาเยอะแล้ว ไม่มีให้";
+                formula.innerText = `${formulaText} = ${moneyShort(retro)} (ติดลบ)`;
+            } else {
+                el.className = "result-value retro";
+                el.innerText = formatWithCommas(retro.toFixed(2)) + " THB";
+                formula.innerText = `${formulaText}`;
+            }
+            box.classList.toggle('is-no', !eligible || retro < 0);
+        }
+
         function calculateAll() {
             let ranges = {};
+            const R = {};
 
             periods.forEach(p => {
-                if (!p.isHalf) {
-                    let wM = Math.min(100, Math.max(0, getVal(`${p.id}-weightM`)));
-                    document.getElementById(`${p.id}-weightT`).value = 100 - wM;
-                }
+                let wM = Math.min(100, Math.max(0, getVal(`${p.id}-weightM`)));
+                byId(`${p.id}-weightT`).value = 100 - wM;
             });
 
-            periods.filter(p => p.isHalf).forEach(h => {
+            // Half และ Yearly = ผลรวมของ Quarter ต้นทาง
+            periods.filter(isAgg).forEach(h => {
                 let targetM = 0, targetT = 0, actM = 0, actT = 0;
                 h.source.forEach(s => {
                     targetM += getVal(`${s}-targetM`); targetT += getVal(`${s}-targetT`);
@@ -475,197 +876,302 @@
 
                 let totalTarget = tM + tT;
                 let totalActual = aM + aT;
-                document.getElementById(`${p.id}-totalTarget`).innerText = formatWithCommas(totalTarget.toFixed(2)) + " THB";
-                document.getElementById(`${p.id}-totalActual`).innerText = formatWithCommas(totalActual.toFixed(2)) + " THB";
+                byId(`${p.id}-totalTarget`).innerText = money(totalTarget);
+                byId(`${p.id}-totalActual`).innerText = money(totalActual);
 
                 let pctM = tM > 0 ? (aM / tM) * 100 : 0;
                 let pctT = tT > 0 ? (aT / tT) * 100 : 0;
-                document.getElementById(`${p.id}-actualPctM`).value = pctM.toFixed(2);
-                document.getElementById(`${p.id}-actualPctT`).value = pctT.toFixed(2);
+                byId(`${p.id}-actualPctM`).value = pctM.toFixed(2);
+                byId(`${p.id}-actualPctT`).value = pctT.toFixed(2);
 
                 let realRange = (pctM * wM) + (pctT * wT);
                 realRange = parseFloat(realRange.toFixed(2)); // ล็อคทศนิยมให้เป๊ะตรงกับหน้าจอก่อน
-                
-                // แก้ไขขีดจำกัดสูงสุดของ RANGE ในแท็บ Half จาก 120 เป็น 130
-                let calcRange = p.isHalf && realRange > 130 ? 130 : realRange;
+
+                // Half คิด RANGE สูงสุด 130%, Yearly คิด RANGE สูงสุด 120%
+                const capped = isAgg(p) && realRange > p.maxRange;
+                let calcRange = capped ? p.maxRange : realRange;
                 ranges[p.id] = calcRange;
 
-                let rangeEl = document.getElementById(`${p.id}-range`);
-                if (p.isHalf && realRange > 130) {
-                    rangeEl.innerText = realRange.toFixed(2) + "% (MAX 130%)";
-                } else {
-                    rangeEl.innerText = realRange.toFixed(2) + "%";
-                }
+                byId(`${p.id}-range`).innerText = realRange.toFixed(2) + "%" + (capped ? ` (MAX ${p.maxRange}%)` : "");
 
                 let payout = getPayout(calcRange);
-                document.getElementById(`${p.id}-payoutPct`).innerText = payout + "%";
+                byId(`${p.id}-payoutPct`).innerText = payout + "%";
 
-                let inc = (payout / 100) * 120000;
-                let incEl = document.getElementById(`${p.id}-incentive`);
-                incEl.innerText = formatWithCommas(inc.toFixed(2)) + " THB";
-                incEl.dataset.raw = inc;
+                let inc = (payout / 100) * INCENTIVE_BASE;
+                byId(`${p.id}-incentive`).innerText = money(inc);
 
-                const msg = document.getElementById(`${p.id}-diamond-msg`);
-                msg.style.visibility = realRange >= 130 ? 'visible' : 'hidden';
+                byId(`${p.id}-diamond-wrap`).classList.toggle('show', realRange >= 130);
+                updateMeter(`${p.id}-meter`, p.type, realRange);
 
-                if (!p.isHalf) {
-                    let simCard = document.getElementById(`${p.id}-sim-card`);
-                    if (simCard) {
-                        if (realRange >= 130) {
-                            simCard.style.display = 'none';
-                        } else {
-                            simCard.style.display = 'block';
-                            let simTargetSlider = document.getElementById(`${p.id}-sim-target`);
-                            let simTargetNum = document.getElementById(`${p.id}-sim-target-num`);
-                            
-                            let currentMin = Math.max(0, realRange);
-                            simTargetSlider.min = currentMin.toFixed(1);
-                            simTargetNum.min = currentMin.toFixed(1);
+                R[p.id] = { realRange, capped, payout, inc };
 
-                            if (parseFloat(simTargetSlider.value) < currentMin) {
-                                simTargetSlider.value = currentMin.toFixed(1);
-                                simTargetNum.value = currentMin.toFixed(1);
-                            }
-                            
-                            runSimulator(p.id);
+                if (p.type === 'quarter') {
+                    R[p.id].actual = getVal(`${p.id}-actualIncentive`);
+                    let simCard = byId(`${p.id}-sim-card`);
+                    if (realRange >= 130) {
+                        simCard.style.display = 'none';
+                    } else {
+                        simCard.style.display = 'block';
+                        let simTargetSlider = byId(`${p.id}-sim-target`);
+                        let simTargetNum = byId(`${p.id}-sim-target-num`);
+
+                        let currentMin = Math.max(0, realRange);
+                        simTargetSlider.min = currentMin.toFixed(1);
+                        simTargetNum.min = currentMin.toFixed(1);
+
+                        if (parseFloat(simTargetSlider.value) < currentMin) {
+                            simTargetSlider.value = currentMin.toFixed(1);
+                            simTargetNum.value = currentMin.toFixed(1);
                         }
+
+                        runSimulator(p.id);
                     }
                 }
             });
 
-            periods.filter(p => p.isHalf).forEach(h => {
-                let incBase = parseFloat(document.getElementById(`${h.id}-incentive`).dataset.raw || 0);
-                let incX2 = incBase * 2;
-                document.getElementById(`${h.id}-incentiveX2`).innerText = formatWithCommas(incX2.toFixed(2)) + " THB";
+            // --- Half: Retro = IncentiveX2 - Actual Incentive (ทุก Quarter ต้อง >= 80%) ---
+            periods.filter(p => p.type === 'half').forEach(h => {
+                let incX2 = R[h.id].inc * 2;
+                byId(`${h.id}-incentiveX2`).innerText = money(incX2);
 
                 let actSum = h.source.reduce((s, q) => s + getVal(`${q}-actualIncentive`), 0);
-                document.getElementById(`${h.id}-actualIncentiveHalf`).innerText = formatWithCommas(actSum.toFixed(2)) + " THB";
+                byId(`${h.id}-actualIncentiveHalf`).innerText = money(actSum);
 
-                let retroEl = document.getElementById(`${h.id}-retro`);
-                if (h.source.some(s => ranges[s] < 80)) {
-                    retroEl.className = "result-value danger";
-                    retroEl.innerText = "ไม่ได้ มีQuarterไม่ถึง80%";
-                } else {
-                    let retro = incX2 - actSum;
-                    if (retro < 0) {
-                        retroEl.className = "result-value danger";
-                        retroEl.innerText = "ได้มาเยอะแล้ว ไม่มีให้";
-                    } else {
-                        retroEl.className = "result-value retro";
-                        retroEl.innerText = formatWithCommas(retro.toFixed(2)) + " THB";
-                    }
-                }
+                const lowQuarters = h.source.filter(s => ranges[s] < 80);
+                const eligible = lowQuarters.length === 0;
+                const retro = incX2 - actSum;
+                renderRetro(h.id, eligible, retro,
+                    "ไม่ได้ มีQuarterไม่ถึง80%",
+                    lowQuarters.map(q => `${periodById(q).short} = ${ranges[q].toFixed(2)}%`).join(', ') + ' (ต่ำกว่า 80%)',
+                    `IncentiveX2 ${moneyShort(incX2)} − Actual ${moneyShort(actSum)}`);
+                Object.assign(R[h.id], { multi: incX2, actual: actSum, eligible, retro });
             });
 
-            // *** ระบบ Auto-Save: สั่งเซฟทุกครั้งที่มีการคำนวณแบบเงียบๆ (ไม่ขึ้น Toast รบกวน) ***
-            saveData(false);
+            // --- Yearly: Retro = IncentiveX4 - (Actual Incentive Half 1 + Half 2) (Average RANGE Q1-Q4 ต้อง >= 80%) ---
+            periods.filter(p => p.type === 'year').forEach(y => {
+                let incX4 = R[y.id].inc * y.multiplier;
+                byId(`${y.id}-incentiveX4`).innerText = money(incX4);
+
+                const halfActuals = y.halves.map(hid => R[hid].actual);
+                const actSum = halfActuals.reduce((s, v) => s + v, 0);
+                byId(`${y.id}-actualIncentiveYear`).innerText = money(actSum);
+                byId(`${y.id}-actualBreakdown`).innerText = y.halves.map((hid, i) => `${periodById(hid).label} ${moneyShort(halfActuals[i])}`).join(' + ');
+
+                const avg = parseFloat((y.source.reduce((s, q) => s + ranges[q], 0) / y.source.length).toFixed(2));
+                byId(`${y.id}-avgRange`).innerText = avg.toFixed(2) + "%";
+                updateMeter(`${y.id}-avg-meter`, 'avg', avg);
+                byId(`${y.id}-avg-chips`).innerHTML = y.source.map(q =>
+                    `<span class="chip ${ranges[q] < 80 ? 'low' : ''}">${periodById(q).short} ${ranges[q].toFixed(2)}%</span>`).join('');
+
+                const eligible = avg >= 80;
+                const retro = incX4 - actSum;
+                renderRetro(y.id, eligible, retro,
+                    "ไม่ได้ Average Quarter ไม่ถึง 80%",
+                    `Average RANGE Q1–Q4 = ${avg.toFixed(2)}% (ต่ำกว่า 80%)`,
+                    `IncentiveX4 ${moneyShort(incX4)} − Actual (H1+H2) ${moneyShort(actSum)}`);
+                Object.assign(R[y.id], { multi: incX4, actual: actSum, eligible, retro, avg });
+            });
+
+            lastRealRanges = Object.fromEntries(Object.entries(R).map(([k, v]) => [k, v.realRange]));
+            renderSummary(R);
+        }
+
+        function renderSummary(R) {
+            let total = 0;
+            byId('summary-body').innerHTML = periods.map(p => {
+                const r = R[p.id];
+                const rangeTxt = r.realRange.toFixed(2) + '%' + (r.capped ? `<span class="cap">คิดที่ MAX ${p.maxRange}%</span>` : '');
+                let incTxt, retroTxt;
+                if (p.type === 'quarter') {
+                    incTxt = moneyShort(r.inc);
+                    retroTxt = '<span class="muted">—</span>';
+                    total += r.actual;
+                } else {
+                    incTxt = moneyShort(r.multi);
+                    if (!r.eligible) {
+                        retroTxt = `<span class="pill no">${p.type === 'year' ? 'Avg <80%' : 'Q <80%'}</span>`;
+                    } else if (r.retro < 0) {
+                        retroTxt = '<span class="pill warn">ได้ครบแล้ว</span>';
+                    } else {
+                        retroTxt = `<span class="retro-num">${moneyShort(r.retro)}</span>`;
+                        total += r.retro;
+                    }
+                }
+                return `<tr class="row-${p.type}" data-tab="${p.id}">
+                    <td>${p.short}</td><td>${rangeTxt}</td><td class="col-payout">${r.payout}%</td>
+                    <td>${incTxt}</td><td>${moneyShort(r.actual)}</td><td>${retroTxt}</td></tr>`;
+            }).join('');
+            byId('summary-total').innerText = moneyShort(total) + ' THB';
         }
 
         function getPayout(r) {
-            let v = Math.floor(parseFloat(r.toFixed(2))); 
+            let v = Math.floor(parseFloat(r.toFixed(2)));
             if (v < 100) return 0;
             if (v >= 130) return 175;
-            const table = { 
-                100:100, 101:102, 102:104, 103:106, 104:108, 105:110, 106:112, 107:114, 108:116, 109:118, 
-                110:122, 111:124, 112:126, 113:128, 114:130, 115:132, 116:134, 117:136, 118:138, 119:140, 
-                120:145, 121:148, 122:150, 123:153, 124:155, 125:158, 126:161, 127:164, 128:167, 129:170 
+            const table = {
+                100:100, 101:102, 102:104, 103:106, 104:108, 105:110, 106:112, 107:114, 108:116, 109:118,
+                110:122, 111:124, 112:126, 113:128, 114:130, 115:132, 116:134, 117:136, 118:138, 119:140,
+                120:145, 121:148, 122:150, 123:153, 124:155, 125:158, 126:161, 127:164, 128:167, 129:170
             };
             return table[v] || 0;
         }
 
-        function switchTab(id) {
+        function switchTab(id, { fromUser = true } = {}) {
             document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
-            document.getElementById(`tab-btn-${id}`).classList.add('active');
-            document.getElementById(`content-${id}`).classList.add('active');
-            
-            const rangeVal = parseFloat(document.getElementById(`${id}-range`).innerText);
-            if (rangeVal >= 130) triggerFireworks();
-            else isFireworksActive = false;
+            document.querySelectorAll('.tab').forEach(el => el.setAttribute('aria-selected', 'false'));
+            const tabBtn = byId(`tab-btn-${id}`);
+            tabBtn.classList.add('active');
+            tabBtn.setAttribute('aria-selected', 'true');
+            byId(`content-${id}`).classList.add('active');
+            scrollTabIntoView(tabBtn);
+
+            uiState.tab = id;
+            saveUIState();
+
+            if (fromUser) {
+                const headerH = document.querySelector('header').offsetHeight;
+                if (window.scrollY > headerH) window.scrollTo(0, headerH);
+                if (lastRealRanges[id] >= 130) triggerFireworks();
+                else isFireworksActive = false;
+            }
+        }
+
+        function scrollTabIntoView(tabBtn) {
+            const c = byId('tabs-container');
+            const left = tabBtn.offsetLeft - (c.clientWidth - tabBtn.offsetWidth) / 2;
+            if (typeof c.scrollTo === 'function') c.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
         }
 
         function changeYear() {
+            uiState.year = byId('global-year').value;
+            saveUIState();
             loadData();
             calculateAll();
+            refreshSaveStatus();
+            showToast(`แสดงข้อมูลปี ${uiState.year}`);
         }
 
         function showToast(msg, isError = false) {
-            const t = document.getElementById('toast');
+            const t = byId('toast');
             t.innerText = msg;
-            t.style.backgroundColor = isError ? "rgba(239, 68, 68, 0.9)" : "rgba(16, 185, 129, 0.9)";
+            t.style.backgroundColor = isError ? "rgba(239, 68, 68, 0.95)" : "rgba(36, 27, 51, 0.88)";
             t.style.display = 'block';
-            setTimeout(() => t.style.display = 'none', 2500);
+            clearTimeout(t._timer);
+            t._timer = setTimeout(() => t.style.display = 'none', 2200);
         }
 
-        function saveData(triggerToast = false) {
+        // ---------- บันทึก / โหลดข้อมูล (แยกตามปี) ----------
+        function checkStorage() {
             try {
-                const year = document.getElementById('global-year').value;
-                let allData = {};
-                try { allData = JSON.parse(localStorage.getItem('incentiveDataMaster') || '{}'); } catch(e) {}
-                
+                localStorage.setItem('__incentive_test__', '1');
+                localStorage.removeItem('__incentive_test__');
+                return true;
+            } catch (e) { return false; }
+        }
+
+        function readAllData() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {}; } catch (e) { return {}; }
+        }
+
+        function loadUIState() {
+            try {
+                const s = JSON.parse(localStorage.getItem(UI_KEY) || '{}') || {};
+                if (s.year) uiState.year = String(s.year);
+                if (s.tab) uiState.tab = s.tab;
+                if (s.savedAt && typeof s.savedAt === 'object') uiState.savedAt = s.savedAt;
+            } catch (e) {}
+        }
+
+        function saveUIState() {
+            try { localStorage.setItem(UI_KEY, JSON.stringify(uiState)); } catch (e) {}
+        }
+
+        function buildYearOptions() {
+            const nowYear = new Date().getFullYear();
+            const known = Object.keys(readAllData()).map(Number).filter(y => Number.isInteger(y) && y >= 2000 && y <= 2100);
+            if (uiState.year && /^\d{4}$/.test(uiState.year)) known.push(Number(uiState.year));
+            const start = Math.min(nowYear, ...known);
+            const end = Math.max(nowYear + 5, ...known);
+            const sel = byId('global-year');
+            sel.innerHTML = '';
+            for (let y = start; y <= end; y++) sel.add(new Option(String(y), String(y)));
+            sel.value = uiState.year && sel.querySelector(`option[value="${uiState.year}"]`) ? uiState.year : String(nowYear);
+            uiState.year = sel.value;
+        }
+
+        function saveData() {
+            try {
+                const year = byId('global-year').value;
+                let allData = readAllData();
+
                 let yearData = {};
                 periods.forEach(p => {
-                    ['targetM', 'targetT', 'weightM', 'actualM', 'actualT', 'actualIncentive'].forEach(f => {
-                        let el = document.getElementById(`${p.id}-${f}`);
+                    FIELDS.forEach(f => {
+                        let el = byId(`${p.id}-${f}`);
                         if (el) yearData[`${p.id}-${f}`] = el.value;
                     });
                 });
-                
+
                 allData[year] = yearData;
-                localStorage.setItem('incentiveDataMaster', JSON.stringify(allData));
-                
-                if (triggerToast) showToast("บันทึกข้อมูลเรียบร้อย!");
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
+                storageOK = true;
+
+                uiState.savedAt[year] = Date.now();
+                saveUIState();
+                setSaveStatus('saved', `บันทึกแล้ว ✓ ${formatSavedTime(uiState.savedAt[year])}`, true);
             } catch (error) {
-                if (triggerToast) alert("เบราว์เซอร์ปิดกั้นการ Save ข้อมูลอัตโนมัติ \n\nโปรดใช้ฟังก์ชัน 'จัดการข้อมูล' ด้านบน");
+                storageOK = false;
+                setSaveStatus('error', 'บันทึกไม่สำเร็จ (เบราว์เซอร์ปิดกั้น)');
             }
         }
 
         function loadData() {
             try {
-                const year = document.getElementById('global-year').value;
-                const allData = JSON.parse(localStorage.getItem('incentiveDataMaster') || '{}');
+                const year = byId('global-year').value;
+                const allData = readAllData();
                 const yearData = allData[year] || {};
-                
+
                 periods.forEach(p => {
-                    ['targetM', 'targetT', 'weightM', 'actualM', 'actualT', 'actualIncentive'].forEach(f => {
-                        let el = document.getElementById(`${p.id}-${f}`);
+                    FIELDS.forEach(f => {
+                        let el = byId(`${p.id}-${f}`);
                         if (el) el.value = yearData[`${p.id}-${f}`] || (f === 'weightM' ? '70' : '');
                     });
                 });
             } catch (error) {}
         }
 
-        function openBackup() {
-            saveData(false);
-            let dataStr = "";
-            try { dataStr = localStorage.getItem('incentiveDataMaster') || '{}'; } catch(e) {}
-            document.getElementById('backup-textarea').value = dataStr;
-            document.getElementById('backup-modal').style.display = 'flex';
+        function formatSavedTime(ts) {
+            const d = new Date(ts);
+            const time = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            if (d.toDateString() === new Date().toDateString()) return time;
+            return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) + ' ' + time;
         }
-        function closeBackup() { document.getElementById('backup-modal').style.display = 'none'; }
-        function restoreBackup() {
-            let pastedData = document.getElementById('backup-textarea').value;
-            if (!pastedData || pastedData.trim() === "") return;
-            try {
-                JSON.parse(pastedData);
-                localStorage.setItem('incentiveDataMaster', pastedData);
-                loadData();
-                calculateAll();
-                closeBackup();
-                showToast("นำเข้าข้อมูลสำเร็จ!");
-            } catch (error) {
-                alert("โค้ดข้อมูลไม่ถูกต้อง โปรดตรวจสอบอีกครั้ง");
-            }
+
+        function setSaveStatus(kind, text, flash = false) {
+            const s = byId('save-status');
+            s.className = `save-status ${kind}`;
+            byId('save-text').innerText = text;
+            if (flash) { void s.offsetWidth; s.classList.add('flash'); }
+        }
+
+        function refreshSaveStatus() {
+            const ts = uiState.savedAt[byId('global-year').value];
+            if (!storageOK) setSaveStatus('error', 'บันทึกไม่ได้ (เบราว์เซอร์ปิดกั้น)');
+            else if (ts) setSaveStatus('saved', `บันทึกล่าสุด ${formatSavedTime(ts)}`);
+            else setSaveStatus('idle', 'บันทึกอัตโนมัติ');
         }
 
         // --- Fireworks ---
         function triggerFireworks() {
+            if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
             clearTimeout(fireworksTimer);
             isFireworksActive = true;
             fireworksTimer = setTimeout(() => { isFireworksActive = false; }, 3000);
+            if (!fireworksRunning) { fireworksRunning = true; requestAnimationFrame(animateFireworks); }
         }
-        const canvas = document.getElementById('fireworks');
+        const canvas = byId('fireworks');
         const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
         let particles = [];
         class Particle {
             constructor(x, y, color) {
@@ -682,8 +1188,8 @@
                 ctx.arc(this.x, this.y, 2, 0, Math.PI*2); ctx.fillStyle = this.color; ctx.fill(); ctx.restore();
             }
         }
+        // วาดเฉพาะตอนมีพลุ (ไม่วนลูปตลอดเวลา ช่วยประหยัดแบต)
         function animateFireworks() {
-            requestAnimationFrame(animateFireworks);
             ctx.clearRect(0,0,canvas.width,canvas.height);
             if (isFireworksActive && Math.random() < 0.1) {
                 let x = Math.random()*canvas.width, y = Math.random()*canvas.height/2;
@@ -692,9 +1198,11 @@
             }
             particles = particles.filter(p => p.alpha > 0);
             particles.forEach(p => { p.update(); p.draw(); });
+            if (isFireworksActive || particles.length) requestAnimationFrame(animateFireworks);
+            else fireworksRunning = false;
         }
 
-        window.onload = initApp;
+        initApp();
     </script>
 </body>
 </html>
